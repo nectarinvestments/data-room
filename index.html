@@ -919,27 +919,40 @@ header{position:relative;top:auto;z-index:100;}
 /* ── TEAM FLIP CARDS ── */
 .team-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
 
-/* ── DEALS WRAP (table + one-pager side panel) ── */
-.deals-wrap { display: flex; gap: 16px; align-items: flex-start; }
-.deals-wrap .table-section { flex: 1; min-width: 0; }
+/* ── DEALS WRAP (table; one-pager renders as overlay modal) ── */
+.deals-wrap { display: block; }
+.deals-wrap .table-section { min-width: 0; }
 
-/* ── ONE-PAGER PANEL ── */
+/* ── ONE-PAGER MODAL ── */
+.op-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(1,4,29,0.55);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  animation: opBackdropFade .18s ease;
+}
+@keyframes opBackdropFade { from { opacity: 0 } to { opacity: 1 } }
 .op {
-  width: 420px;
-  flex-shrink: 0;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100vw - 48px);
+  max-width: 960px;
+  max-height: calc(100vh - 48px);
   background: #ffffff;
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 8px 40px rgba(1,4,29,0.15), 0 0 0 1px rgba(151,27,255,0.12);
-  animation: opSlideIn .2s ease;
+  overflow-y: auto;
+  box-shadow: 0 24px 80px rgba(1,4,29,0.35), 0 0 0 1px rgba(151,27,255,0.18);
+  animation: opModalIn .2s ease;
   font-family: 'Manrope', sans-serif;
   color: #01041D;
-  max-height: 88vh;
-  overflow-y: auto;
-  position: sticky;
-  top: 80px;
+  z-index: 1001;
 }
-@keyframes opSlideIn { from { opacity:0; transform:translateX(16px) } to { opacity:1; transform:translateX(0) } }
+@keyframes opModalIn { from { opacity:0; transform: translate(-50%, -48%) scale(.98) } to { opacity:1; transform: translate(-50%, -50%) scale(1) } }
+body.op-open { overflow: hidden; }
 .op-top {
   display: flex;
   align-items: center;
@@ -951,7 +964,7 @@ header{position:relative;top:auto;z-index:100;}
 .op-logo { font-family: 'Manrope', sans-serif; font-size: 16px; color: #971BFF; font-weight: 700; letter-spacing: 0.02em; }
 .op-x { cursor: pointer; font-size: 18px; color: #bbb; background: none; border: none; line-height: 1; }
 .op-x:hover { color: #333; }
-.op-photo { width: 100%; height: 175px; background: linear-gradient(135deg, #01041D, #3302F7); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; overflow: hidden; }
+.op-photo { width: 100%; height: 260px; background: linear-gradient(135deg, #01041D, #3302F7); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; overflow: hidden; }
 .op-photo img { width: 100%; height: 100%; object-fit: cover; }
 .op-hb { padding: 14px 16px 0; }
 .op-title { font-size: 18px; font-weight: 700; color: #01041D; margin-bottom: 3px; }
@@ -1997,39 +2010,35 @@ tbody tr { cursor: pointer; }
   <!-- DEAL TABLE VIEW -->
   <div id="viewDeals" style="display:none">
     <div class="deals-wrap">
-      <div style="flex:1;min-width:0">
-        <div class="table-section">
-          <div class="table-header">
-            <div class="table-title">Deal-Level Detail</div>
-            <div class="table-count" id="tableCount">— positions — click any row</div>
-          </div>
-          <div class="table-wrap">
-            <table id="dealTable">
-              <thead>
-                <tr>
-                  <th onclick="sortTable('id')">ID</th>
-                  <th onclick="sortTable('name')">Borrower</th>
-                  <th onclick="sortTable('asset')">Asset Type</th>
-                  <th onclick="sortTable('type')">Structure</th>
-                  <th onclick="sortTable('vintage')">Vintage</th>
-                  <th onclick="sortTable('advance')">Advance</th>
-                  <th onclick="sortTable('collected')">Collected</th>
-                  <th onclick="sortTable('outstanding')">Outstanding</th>
-                  <th onclick="sortTable('projTotal')">Proj. Total Return</th>
-                  <th onclick="sortTable('irr')">Proj. IRR</th>
-                  <th onclick="sortTable('ltv')">CLTV</th>
-                  <th onclick="sortTable('dscr')">DSCR</th>
-                  <th onclick="sortTable('status')">Status</th>
-                </tr>
-              </thead>
-              <tbody id="dealBody"></tbody>
-            </table>
-          </div>
-          <div class="pagination" id="pagination"></div>
+      <div class="table-section">
+        <div class="table-header">
+          <div class="table-title">Deal-Level Detail</div>
+          <div class="table-count" id="tableCount">— positions — click any row</div>
         </div>
+        <div class="table-wrap">
+          <table id="dealTable">
+            <thead>
+              <tr>
+                <th onclick="sortTable('id')">ID</th>
+                <th onclick="sortTable('name')">Borrower</th>
+                <th onclick="sortTable('asset')">Asset Type</th>
+                <th onclick="sortTable('type')">Structure</th>
+                <th onclick="sortTable('vintage')">Vintage</th>
+                <th onclick="sortTable('advance')">Advance</th>
+                <th onclick="sortTable('collected')">Collected</th>
+                <th onclick="sortTable('outstanding')">Outstanding</th>
+                <th onclick="sortTable('projTotal')">Proj. Total Return</th>
+                <th onclick="sortTable('irr')">Proj. IRR</th>
+                <th onclick="sortTable('ltv')">CLTV</th>
+                <th onclick="sortTable('dscr')">DSCR</th>
+                <th onclick="sortTable('status')">Status</th>
+              </tr>
+            </thead>
+            <tbody id="dealBody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination"></div>
       </div>
-      <!-- ONE-PAGER SIDE PANEL -->
-      <div id="opPanel" style="display:none"></div>
     </div>
   </div>
 
@@ -2187,6 +2196,7 @@ async function bootstrap() {
     } else {
       console.error("initApp() is not defined — existing startup code was not wrapped correctly.");
     }
+    if (typeof applyDeepLink === "function") applyDeepLink();
     hideOverlay();
   } catch (err) {
     console.error("Failed to load PMT_DATA:", err);
@@ -3128,6 +3138,10 @@ function gotoPage(p) { currentPage = p; renderTable(); }
 function openOP(deal) {
   if (!deal) return;
   selDeal = deal;
+  // Update URL so the deal can be deep-linked / shared
+  const openUrl = new URL(window.location.href);
+  openUrl.searchParams.set('deal', deal.id);
+  window.history.replaceState({}, '', openUrl);
   // Highlight selected row
   document.querySelectorAll('#dealBody tr').forEach(r => r.classList.remove('op-sel'));
   const row = document.querySelector(`#dealBody tr[data-id="${deal.id}"]`);
@@ -3136,6 +3150,10 @@ function openOP(deal) {
   const panel = document.getElementById('opPanel');
   panel.style.display = 'block';
   panel.className = 'op';
+  panel.scrollTop = 0;
+  const backdrop = document.getElementById('opBackdrop');
+  if (backdrop) backdrop.style.display = 'block';
+  document.body.classList.add('op-open');
 
   const memo = MEMO[deal.id] || null;
   const m = memo || {};
@@ -3301,8 +3319,75 @@ function openOP(deal) {
 
 function closeOP() {
   document.getElementById('opPanel').style.display = 'none';
-  document.querySelectorAll('#dealBody tr').forEach(r => r.classList.remove('op-sel'));
+  const backdrop = document.getElementById('opBackdrop');
+  if (backdrop) backdrop.style.display = 'none';
+  document.body.classList.remove('op-open');
+  // Selected row stays highlighted underneath so the user keeps their place.
+  // The highlight clears when they click outside any row, press Escape with
+  // the modal closed, change page/filter, or open a different deal.
+  const closeUrl = new URL(window.location.href);
+  closeUrl.searchParams.delete('deal');
+  window.history.replaceState({}, '', closeUrl);
+}
+
+function clearDealSelection() {
+  if (!selDeal) return;
   selDeal = null;
+  document.querySelectorAll('#dealBody tr.op-sel').forEach(r => r.classList.remove('op-sel'));
+}
+
+// Click outside any deal row / modal / backdrop clears the lingering highlight
+// (only when the modal is closed — closing the modal itself preserves it).
+document.addEventListener('click', function(e) {
+  if (!selDeal) return;
+  if (document.body.classList.contains('op-open')) return;
+  const t = e.target;
+  if (t.closest && (t.closest('#dealBody tr') || t.closest('#opPanel') || t.closest('#opBackdrop'))) return;
+  clearDealSelection();
+});
+
+// Escape closes the modal when open; with the modal already closed it
+// clears any lingering deal-row highlight.
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Escape') return;
+  if (document.body.classList.contains('op-open')) {
+    closeOP();
+  } else if (selDeal) {
+    clearDealSelection();
+  }
+});
+
+// Open the deal from ?deal=<id> on page load. Requires the deal table to have
+// been rendered already (run from bootstrap, after initApp()). The modal is
+// position:fixed so it overlays whichever .dr-sec is visible.
+function applyDeepLink() {
+  const dealParam = new URLSearchParams(window.location.search).get('deal');
+  if (!dealParam) return;
+  const target = RAW.find(d => String(d.id) === String(dealParam));
+  if (!target) { console.warn('Deep-link deal id not in RAW: ' + dealParam); return; }
+  if (!filtered.some(d => String(d.id) === String(dealParam))) {
+    console.warn('Deep-link deal id filtered out of current view: ' + dealParam);
+    return;
+  }
+  const sortFns = {
+    id: d => parseInt(d.id)||0, name: d => d.name, asset: d => d.asset,
+    type: d => d.type, vintage: d => d.vintage, advance: d => d.advance,
+    collected: d => d.collected, outstanding: d => d.outstanding,
+    projTotal: d => projTotal(d), irr: d => d.irr, ltv: d => d.ltv,
+    dscr: d => d.dscr, status: d => d.status,
+  };
+  const sorted = [...filtered].sort((a,b) => {
+    const va = sortFns[sortKey]?.(a) ?? 0, vb = sortFns[sortKey]?.(b) ?? 0;
+    return typeof va === 'string' ? va.localeCompare(vb)*sortDir : (va-vb)*sortDir;
+  });
+  const idx = sorted.findIndex(d => String(d.id) === String(dealParam));
+  if (idx < 0) return;
+  const targetPage = Math.floor(idx / PER_PAGE) + 1;
+  if (targetPage !== currentPage) {
+    currentPage = targetPage;
+    renderTable();
+  }
+  openOP(target);
 }
 
 // ── CASH FLOW ─────────────────────────────────────────────────────────────
@@ -4443,6 +4528,10 @@ function renderMarketCharts() {
     </div>
   </div>
 </div>
+
+<!-- ONE-PAGER MODAL (rendered above any view) -->
+<div id="opBackdrop" class="op-backdrop" style="display:none" onclick="closeOP()"></div>
+<div id="opPanel" style="display:none"></div>
 
 </body>
 </html>
