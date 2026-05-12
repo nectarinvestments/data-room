@@ -1211,6 +1211,54 @@ tbody tr { cursor: pointer; }
 }
 #signed-in-indicator a:hover { color: #ffffff; }
 
+/* ── Tier 1 (preview) view ──────────────────────────────────────────────
+   body.tier-1 is set by bootstrap() once PMT_DATA.tier resolves. Until
+   then the page renders the full (Tier 2) view; the pmt-loading-overlay
+   masks any transition. */
+
+/* Top-nav: hide Opportunity + Invest dropdowns for Tier 1 */
+body.tier-1 .nav-item:has(#nb-opp),
+body.tier-1 .nav-item:has(#nb-invest) { display: none !important; }
+
+/* Top-nav: inside Who We Are, only Track Record remains */
+body.tier-1 #nd-firm,
+body.tier-1 #nd-cases { display: none !important; }
+
+/* Sections: only Track Record is reachable */
+body.tier-1 #sec-firm,
+body.tier-1 #sec-cases,
+body.tier-1 #sec-market,
+body.tier-1 #sec-operate,
+body.tier-1 #sec-whynectar,
+body.tier-1 #sec-terms,
+body.tier-1 #sec-fit { display: none !important; }
+
+/* Track Record sub-views: scenario block hidden for Tier 1 (full-book
+   Bear/Base/Bull is a Tier 2 analyst feature). Summary/Deal Detail/
+   Payment Analysis pills remain visible — same 3 as Tier 2 today. */
+body.tier-1 #viewSummaryScenario { display: none !important; }
+
+/* Request Full Access CTA: Tier 1 only */
+.tier-1-cta { display: none; }
+body.tier-1 .tier-1-cta {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  margin-right: 18px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #971BFF, #3302F7);
+  color: #ffffff;
+  text-decoration: none;
+  border-radius: 6px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  transition: opacity .15s;
+  white-space: nowrap;
+}
+body.tier-1 .tier-1-cta:hover { opacity: .88; }
+
 </style>
 </head>
 <body>
@@ -1269,6 +1317,9 @@ tbody tr { cursor: pointer; }
       <a href="#" onclick="showSec('fit');return false;" id="nd-fit">Is This Right For You?</a>
     </div>
   </div>
+  <a class="tier-1-cta"
+     href="mailto:lilato@usenectar.com?subject=Nectar%20Investor%20Data%20Room%20-%20Full%20Access%20Request&body=Hi,%0A%0AI%20am%20interested%20in%20receiving%20full%20access%20to%20the%20Nectar%20Investor%20Data%20Room.%0A%0AThank%20you."
+     >Request Full Access →</a>
 </nav>
 
 
@@ -2456,10 +2507,20 @@ async function bootstrap() {
       showUnauthorizedOverlay(session.user?.email);
       return;
     }
+    // Tier resolution. Backend RPC returns {tape, dpd, sched, workouts, tier};
+    // a missing tier is treated as Tier 2 so legacy clients see the full view.
+    window.NC_TIER = (PMT_DATA && PMT_DATA.tier != null) ? PMT_DATA.tier : 2;
+    document.body.classList.remove("tier-0", "tier-1", "tier-2");
+    document.body.classList.add("tier-" + window.NC_TIER);
     if (typeof initApp === "function") {
       initApp();
     } else {
       console.error("initApp() is not defined — existing startup code was not wrapped correctly.");
+    }
+    // Tier 1 lands on Track Record directly (the firm overview / opportunity /
+    // invest sections are hidden via CSS, and the Summary view is the preview).
+    if (window.NC_TIER === 1 && typeof showSec === "function") {
+      showSec("track");
     }
     if (typeof applyDeepLink === "function") applyDeepLink();
     hideOverlay();
@@ -2517,6 +2578,11 @@ const OBS_DATE = new Date(Date.UTC(2026, 3, 22));
 const OBS_MONTH_STR = "2026-04";
 
 // ── RAW DATA ────────────────────────────────────────────────────────────────
+// Source of truth for the Tier 2 (full) render path. INLINE in the HTML —
+// Tier 1 (preview) users can still read every deal.name via View Source until
+// this constant is migrated to Supabase like PMT_DATA was. Tier 1's rendered
+// table/modal builds from PMT_DATA.tape, which the backend serves with name
+// nulled; the source-leak here is a known, accepted limitation.
 const RAW = [
   {id:"1284",name:"RBG Pine Associates LLC",asset:"Multifamily",type:"Cash Flow Assignment",vintage:2026,advance:1000000.0,collected:31666.67,outstanding:973389.35,monthlyPmt:15833.33,irr:21.0,ltv:71.46,dscr:2.15,status:"Open",term:12,fundDate:"2026-01"},
   {id:"1283",name:"Boudinot Ohio Limited Partnership",asset:"Multifamily",type:"Preferred Equity",vintage:2026,advance:250000.0,collected:13437.12,outstanding:241666.66,monthlyPmt:6718.56,irr:23.0,ltv:64.9,dscr:2.58,status:"Open",term:60,fundDate:"2026-01"},
@@ -3069,6 +3135,12 @@ function projTotal(d) {
 }
 
 // ── FILTER + RENDER ────────────────────────────────────────────────────────
+// `filtered` (from RAW) drives Tier 2 KPIs/table/charts. `filteredTape`
+// (from PMT_DATA.tape) drives Tier 1 KPIs/table. Both are populated each
+// call so the existing chart renderers (which read `filtered`) keep working
+// for Tier 1 — charts only aggregate by asset/vintage/type, no name-level
+// info, so the source-leak constraint doesn't apply to them.
+let filteredTape = [];
 function applyFilters() {
   const asset = document.getElementById('filterAsset').value;
   const status = document.getElementById('filterStatus').value;
@@ -3082,6 +3154,17 @@ function applyFilters() {
     const statusMatch = status === 'all' || d.status === status;
     const typeMatch = type === 'all' || d.type === type;
     const vintageMatch = vintage === 'all' || d.vintage === parseInt(vintage);
+    return assetMatch && statusMatch && typeMatch && vintageMatch;
+  });
+
+  filteredTape = (PMT_DATA.tape || []).filter(t => {
+    if (t.id === 'LP-123') return false;
+    const at = t.asset_type || '';
+    const assetMatch = asset === 'all' || at.includes(asset) ||
+      (asset === 'SFR' && at === 'SFR');
+    const statusMatch = status === 'all' || t.status === status;
+    const typeMatch = type === 'all' || (t.fin_type || '') === type;
+    const vintageMatch = vintage === 'all' || t.vintage === parseInt(vintage);
     return assetMatch && statusMatch && typeMatch && vintageMatch;
   });
 
@@ -3100,6 +3183,7 @@ function renderAll() {
 
 // ── KPIs ──────────────────────────────────────────────────────────────────
 function renderKPIs() {
+  if (window.NC_TIER === 1) { renderKPIsTier1(); return; }
   const open = filtered.filter(d => d.status === 'Open');
   const totalDeployed = filtered.reduce((s,d) => s + d.advance, 0);
   const totalCollected = filtered.reduce((s,d) => s + d.collected, 0);
@@ -3117,6 +3201,31 @@ function renderKPIs() {
   if (document.getElementById('kpiIRR')) document.getElementById('kpiIRR').textContent = fmtPct(avgIRR);
   document.getElementById('kpiDSCR').textContent = avgDSCR.toFixed(2) + 'x';
   document.getElementById('kpiLTV').textContent = fmtPct(avgLTV);
+}
+
+// Tier 1 KPI render — sources from filteredTape (PMT_DATA.tape rows), which
+// the backend serves with names nulled. Uses the tape field schema:
+// advance, total_collected, opb, status, dscr, ltv.
+function renderKPIsTier1() {
+  const src = (typeof filteredTape !== 'undefined' && filteredTape.length) ? filteredTape : (PMT_DATA.tape || []);
+  const open = src.filter(t => t.status === 'Open');
+  const totalDeployed = src.reduce((s,t) => s + (t.advance || 0), 0);
+  const totalCollected = src.reduce((s,t) => s + (t.total_collected || 0), 0);
+  const totalOutstanding = open.reduce((s,t) => s + (t.opb || 0), 0);
+  const dscrRows = open.filter(t => t.dscr != null && t.dscr > 0);
+  const ltvRows  = open.filter(t => t.ltv  != null && t.ltv  > 0);
+  const avgDSCR = dscrRows.length ? dscrRows.reduce((s,t) => s + t.dscr, 0) / dscrRows.length : 0;
+  const avgLTV  = ltvRows.length  ? ltvRows.reduce((s,t)  => s + t.ltv,  0) / ltvRows.length  : 0;
+
+  document.getElementById('kpiDeployed').textContent = fmt(totalDeployed);
+  document.getElementById('kpiDeals').textContent = `${src.length} deals (${open.length} open)`;
+  document.getElementById('kpiCollected').textContent = fmt(totalCollected);
+  document.getElementById('kpiCollectedPct').textContent = totalDeployed ? fmtPct(totalCollected/totalDeployed*100) + ' of deployed' : '—';
+  document.getElementById('kpiOutstanding').textContent = fmt(totalOutstanding);
+  const openAdv = open.reduce((s,t) => s + (t.advance || 0), 0);
+  document.getElementById('kpiOutPct').textContent = openAdv ? fmtPct(totalOutstanding/openAdv*100) + ' of open book' : '—';
+  document.getElementById('kpiDSCR').textContent = dscrRows.length ? avgDSCR.toFixed(2) + 'x' : '—';
+  document.getElementById('kpiLTV').textContent  = ltvRows.length  ? avgLTV.toFixed(1) + '%'  : '—';
 }
 
 // ── CHARTS ────────────────────────────────────────────────────────────────
@@ -3337,6 +3446,7 @@ function sortTable(key) {
 }
 
 function renderTable() {
+  if (window.NC_TIER === 1) { renderTableTier1(); return; }
   const sortFns = {
     id: d => parseInt(d.id)||0, name: d => d.name, asset: d => d.asset,
     type: d => d.type, vintage: d => d.vintage, advance: d => d.advance,
@@ -3399,9 +3509,95 @@ function renderTable() {
 
 function gotoPage(p) { currentPage = p; renderTable(); }
 
+// ── TIER 1 TABLE ──────────────────────────────────────────────────────────
+// Render the deal table from PMT_DATA.tape. Backend nulls name/docsend_url
+// for Tier 1 callers, so this path never reads identifying fields. Columns:
+// ID, Asset Type, Structure, Vintage, Advance, Collected, Outstanding,
+// Proj. Total Return, Proj. IRR — no Borrower, no CLTV/DSCR/Status (those
+// surface in the modal + KPI strip).
+function projTotalTape(t) {
+  if (t.status === 'Closed') return (t.total_collected || 0);
+  const remaining = t.opb || 0;
+  const projIncome = remaining * ((t.proj_irr || 0) / 100);
+  return (t.total_collected || 0) + remaining + projIncome;
+}
+function renderTableTier1() {
+  const sortFns = {
+    id: t => parseInt(t.id)||0, asset: t => t.asset_type || '',
+    type: t => t.fin_type || '', vintage: t => t.vintage,
+    advance: t => t.advance || 0, collected: t => t.total_collected || 0,
+    outstanding: t => t.opb || 0, projTotal: t => projTotalTape(t),
+    irr: t => t.proj_irr || 0, ltv: t => t.ltv || 0,
+    dscr: t => t.dscr || 0, status: t => t.status || '',
+    // 'name' is not selectable for Tier 1 (column hidden); fall back to id.
+    name: t => parseInt(t.id)||0,
+  };
+  const sorted = [...filteredTape].sort((a,b) => {
+    const va = sortFns[sortKey]?.(a) ?? 0, vb = sortFns[sortKey]?.(b) ?? 0;
+    return typeof va === 'string' ? va.localeCompare(vb)*sortDir : (va-vb)*sortDir;
+  });
+
+  const total = sorted.length;
+  const pages = Math.ceil(total/PER_PAGE);
+  const slice = sorted.slice((currentPage-1)*PER_PAGE, currentPage*PER_PAGE);
+
+  // Rewrite the table header to drop the Borrower column for Tier 1.
+  const thead = document.querySelector('#dealTable thead');
+  if (thead) {
+    thead.innerHTML = `
+      <tr>
+        <th onclick="sortTable('id')">ID</th>
+        <th onclick="sortTable('asset')">Asset Type</th>
+        <th onclick="sortTable('type')">Structure</th>
+        <th onclick="sortTable('vintage')">Vintage</th>
+        <th onclick="sortTable('advance')">Advance</th>
+        <th onclick="sortTable('collected')">Collected</th>
+        <th onclick="sortTable('outstanding')">Outstanding</th>
+        <th onclick="sortTable('projTotal')">Proj. Total Return</th>
+        <th onclick="sortTable('irr')">Proj. IRR</th>
+      </tr>`;
+  }
+
+  document.getElementById('tableCount').textContent = `${total} positions — click any row`;
+  document.getElementById('dealBody').innerHTML = slice.map(t => {
+    const at = t.asset_type || '';
+    const ft = t.fin_type || '';
+    const typeClass = ft === 'Preferred Equity' ? 'type-pe' : ft === 'Cash Flow Assignment' ? 'type-cfa' : 'type-ra';
+    const irrVal = t.proj_irr != null ? t.proj_irr : 0;
+    const pct = Math.min(irrVal/40*100, 100);
+    const pt = projTotalTape(t);
+    const isSel = selDeal && String(selDeal.id) === String(t.id);
+    return `<tr data-id="${t.id}" onclick="openOP({id:'${t.id}'})" class="${isSel?'op-sel':''}">
+      <td class="mono dim">${t.id}</td>
+      <td class="dim">${(at || '—').replace('& Hospitality','')}</td>
+      <td><span class="type-badge ${typeClass}">${(ft || '—').replace(' Assignment','').replace('Preferred ','Pref ')}</span></td>
+      <td class="mono">${t.vintage ?? '—'}</td>
+      <td class="mono">${fmt(t.advance || 0)}</td>
+      <td class="mono" style="color:var(--green)">${fmt(t.total_collected || 0)}</td>
+      <td class="mono">${t.status==='Closed'?'—':fmt(t.opb || 0)}</td>
+      <td class="mono" style="color:#971BFF">${fmt(pt)}</td>
+      <td>
+        <div class="irr-bar">
+          <div class="irr-bar-track"><div class="irr-bar-fill" style="width:${pct}%"></div></div>
+          <span class="mono" style="font-size:11px">${t.proj_irr != null ? fmtPct(t.proj_irr) : '—'}</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const pag = document.getElementById('pagination');
+  pag.innerHTML = `<span class="page-info">${(currentPage-1)*PER_PAGE+1}–${Math.min(currentPage*PER_PAGE,total)} of ${total}</span>`;
+  if (currentPage > 1) pag.innerHTML += `<button class="page-btn" onclick="gotoPage(${currentPage-1})">← Prev</button>`;
+  for (let i = Math.max(1,currentPage-2); i <= Math.min(pages, currentPage+2); i++) {
+    pag.innerHTML += `<button class="page-btn ${i===currentPage?'active':''}" onclick="gotoPage(${i})">${i}</button>`;
+  }
+  if (currentPage < pages) pag.innerHTML += `<button class="page-btn" onclick="gotoPage(${currentPage+1})">Next →</button>`;
+}
+
 // ── ONE-PAGER ──────────────────────────────────────────────────────────────
 function openOP(deal) {
   if (!deal) return;
+  if (window.NC_TIER === 1) { openOPTier1(deal); return; }
   selDeal = deal;
   // Update URL so the deal can be deep-linked / shared
   const openUrl = new URL(window.location.href);
@@ -3582,6 +3778,150 @@ function openOP(deal) {
   `;
 }
 
+// Tier 1 modal — driven entirely from PMT_DATA.tape (backend nulls name,
+// docsend_url, workout for Tier 1). `arg` is either a tape row or any object
+// with an `id` field; we always re-resolve from tape so deep-link calls that
+// pass a RAW deal still hit the anonymized path.
+function openOPTier1(arg) {
+  const lid = arg && arg.id != null ? String(arg.id) : null;
+  if (!lid) return;
+  const t = PMT_DATA.tape.find(x => String(x.id) === lid);
+  if (!t) return;
+
+  selDeal = { id: t.id }; // keep a stable selection marker; never store name
+  document.querySelectorAll('#dealBody tr').forEach(r => r.classList.remove('op-sel'));
+  const row = document.querySelector(`#dealBody tr[data-id="${t.id}"]`);
+  if (row) row.classList.add('op-sel');
+
+  const panel = document.getElementById('opPanel');
+  panel.style.display = 'block';
+  panel.className = 'op';
+  panel.scrollTop = 0;
+  const backdrop = document.getElementById('opBackdrop');
+  if (backdrop) backdrop.style.display = 'block';
+  document.body.classList.add('op-open');
+
+  const at = t.asset_type || 'Real Estate';
+  const photoSrc = `images/${t.id}.png`;
+  const photoHTML = `<img src="${photoSrc}" style="width:100%;height:100%;object-fit:cover" alt="Property photo"
+       onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+     <div style="display:none;width:100%;height:100%;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#01041D,#3302F7);gap:6px">
+       <span style="font-size:48px">${(typeof AICO !== 'undefined' && AICO[at]) || '🏢'}</span>
+       <span style="font-size:10px;color:rgba(255,255,255,0.5);font-family:'Manrope',monospace">${at}</span>
+     </div>`;
+
+  const dscr = (t.dscr != null && t.dscr > 0) ? t.dscr : null;
+  const ltv  = (t.ltv  != null && t.ltv  > 0) ? t.ltv  : null;
+  const pirr = (t.proj_irr != null) ? t.proj_irr : null;
+
+  const dscrCell = dscr != null ? dscr.toFixed(2) + 'x' : '—';
+  const ltvCell  = ltv  != null ? ltv.toFixed(1)  + '%' : '—';
+  const irrCell  = pirr != null ? pirr.toFixed(1) + '%' : '—';
+
+  // Templated highlights. DSCR/CLTV lines are skipped when the underlying
+  // field is null (covers the 3 placeholder deals 1108, 1144, 1157).
+  const whyBullets = [];
+  if (pirr != null && dscr != null) {
+    whyBullets.push(`Projected IRR of ${pirr.toFixed(1)}% with DSCR of ${dscr.toFixed(2)}x`);
+  } else if (pirr != null) {
+    whyBullets.push(`Projected IRR of ${pirr.toFixed(1)}%`);
+  }
+  if (ltv != null) {
+    whyBullets.push(`Conservative CLTV of ${ltv.toFixed(1)}% provides strong equity buffer`);
+  }
+  whyBullets.push('Sponsor verified and asset cash flows assessed');
+
+  const riskBullets = [
+    `Risk — Market and operational risk inherent to ${at} assets. Cash reserve requirement and PG protections in place`,
+    `Risk — Revenue sensitivity to macro conditions`,
+  ];
+
+  const advanceStr = fmt(t.advance || 0);
+  const collectedStr = fmt(t.total_collected || 0);
+  const opbStr = fmt(t.opb || 0);
+  const collPct = t.advance ? Math.min(((t.total_collected || 0) / t.advance) * 100, 100).toFixed(0) : '0';
+  const termStr  = t.term_months ? t.term_months + ' months' : '—';
+  const fundDateStr = t.fund_date || t.fundDate || '—';
+
+  const details = [
+    {l:'Contract Type', v: t.fin_type || '—'},
+    {l:'Advance Amount', v: advanceStr},
+    {l:'Term', v: termStr},
+    {l:'Vintage', v: t.vintage ?? '—'},
+    {l:'Protections', v:'PG, Right to Sell'},
+    {l:'Amortization', v:'Fully Amortizing'},
+    {l:'Servicer', v:'Nectar'},
+  ];
+
+  const statusColor = t.status === 'Closed' ? '#8A9BB8' : '#1A9E6E';
+  const statusLabel = t.status === 'Closed' ? 'Closed' : 'Performing';
+
+  panel.innerHTML = `
+    <div class="op-top">
+      <div class="op-logo">nectar</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;color:#aaa;font-weight:600">— ID ${t.id}</span>
+        <button class="op-x" onclick="closeOP()">✕</button>
+      </div>
+    </div>
+
+    <div class="op-photo">${photoHTML}</div>
+
+    <div class="op-hb">
+      <div class="op-title">Position ${at.replace('& Hospitality','')}</div>
+      <div class="op-sub">Anonymized preview — request full access to view sponsor, location, and underwriting memo.</div>
+      <div class="op-meta">Funded ${fundDateStr} · ${termStr} term · <span style="color:${statusColor};font-weight:700">${statusLabel}</span></div>
+    </div>
+
+    <div class="op-mbar">
+      <div><div class="op-ml">DSCR</div><div class="op-mv gold">${dscrCell}</div></div>
+      <div><div class="op-ml">Total LTV</div><div class="op-mv white">${ltvCell}</div></div>
+      <div><div class="op-ml">Proj. IRR</div><div class="op-mv grn">${irrCell}</div></div>
+    </div>
+
+    <div class="op-body">
+      <div class="op-sec">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+          <div>
+            <div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Advance</div>
+            <div style="font-family:'Manrope',sans-serif;font-size:17px;font-weight:700;color:#01041D">${advanceStr}</div>
+          </div>
+          <div>
+            <div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Collected</div>
+            <div style="font-family:'Manrope',sans-serif;font-size:17px;font-weight:700;color:#1A9E6E">${collectedStr} <span style="font-size:10px;color:#aaa">(${collPct}%)</span></div>
+          </div>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" style="width:${collPct}%"></div></div>
+        <div style="font-size:9px;color:#aaa;margin-top:3px">
+          ${t.status === 'Open' ? `${opbStr} outstanding` : '✓ Fully repaid'}
+        </div>
+      </div>
+
+      <div class="op-sec">
+        <div class="op-st">Deal Highlights</div>
+        <div class="op-2col">
+          <div class="op-card">
+            <div class="op-ct">Why We Like This Deal</div>
+            <ul>${whyBullets.map(b => `<li>${b}</li>`).join('')}</ul>
+          </div>
+          <div class="op-card">
+            <div class="op-ct">Risks &amp; Mitigation</div>
+            <ul>${riskBullets.map(b => `<li>${b}</li>`).join('')}</ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="op-sec">
+        <div class="op-st">Investment Details</div>
+        <div class="op-card">
+          ${details.map(d => `<div class="op-row"><span>${d.l}</span><span>${d.v}</span></div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="op-foot">CONFIDENTIAL — RE Nectar Inc. &nbsp;|&nbsp; <a href="mailto:invest@renectar.com">invest@renectar.com</a></div>
+  `;
+}
+
 function closeOP() {
   document.getElementById('opPanel').style.display = 'none';
   const backdrop = document.getElementById('opBackdrop');
@@ -3628,6 +3968,39 @@ document.addEventListener('keydown', function(e) {
 function applyDeepLink() {
   const dealParam = new URLSearchParams(window.location.search).get('deal');
   if (!dealParam) return;
+
+  // Tier 1: resolve target + page from PMT_DATA.tape / filteredTape.
+  if (window.NC_TIER === 1) {
+    const tt = PMT_DATA.tape.find(x => String(x.id) === String(dealParam));
+    if (!tt) { console.warn('Deep-link deal id not in tape: ' + dealParam); return; }
+    if (!filteredTape.some(x => String(x.id) === String(dealParam))) {
+      console.warn('Deep-link deal id filtered out of current view: ' + dealParam);
+      return;
+    }
+    const sortFnsT = {
+      id: t => parseInt(t.id)||0, asset: t => t.asset_type || '',
+      type: t => t.fin_type || '', vintage: t => t.vintage,
+      advance: t => t.advance || 0, collected: t => t.total_collected || 0,
+      outstanding: t => t.opb || 0, projTotal: t => projTotalTape(t),
+      irr: t => t.proj_irr || 0, ltv: t => t.ltv || 0,
+      dscr: t => t.dscr || 0, status: t => t.status || '',
+      name: t => parseInt(t.id)||0,
+    };
+    const sortedT = [...filteredTape].sort((a,b) => {
+      const va = sortFnsT[sortKey]?.(a) ?? 0, vb = sortFnsT[sortKey]?.(b) ?? 0;
+      return typeof va === 'string' ? va.localeCompare(vb)*sortDir : (va-vb)*sortDir;
+    });
+    const idxT = sortedT.findIndex(t => String(t.id) === String(dealParam));
+    if (idxT < 0) return;
+    const targetPageT = Math.floor(idxT / PER_PAGE) + 1;
+    if (targetPageT !== currentPage) {
+      currentPage = targetPageT;
+      renderTable();
+    }
+    openOP({ id: tt.id });
+    return;
+  }
+
   const target = RAW.find(d => String(d.id) === String(dealParam));
   if (!target) { console.warn('Deep-link deal id not in RAW: ' + dealParam); return; }
   if (!filtered.some(d => String(d.id) === String(dealParam))) {
