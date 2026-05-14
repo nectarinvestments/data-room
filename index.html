@@ -1633,9 +1633,12 @@ body.tier-1 .tier-1-cta {
 <style>
   /* Fund 2 page-specific primitives. Most of the section reuses .stat-strip,
      .firm-eyebrow, .firm-hl, .fit-col, .options-table. */
-  .f2-section-eyebrow { font-family:'Manrope',monospace;font-size:10px;color:#971BFF;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px;margin-top:48px; }
-  .f2-section-title { font-family:'Manrope',serif;font-size:24px;color:var(--text);margin-bottom:6px; }
-  .f2-section-sub { font-size:12px;color:#5A6A8A;margin-bottom:22px;max-width:720px;line-height:1.6; }
+  /* Section eyebrows and titles use the firm-eyebrow/firm-hl typography
+     scaled down so the rhythm under the hero feels deliberate, not chopped. */
+  .f2-section-eyebrow { color:#971BFF;font-family:'Manrope',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;margin-bottom:12px;margin-top:56px; }
+  .f2-section-title { font-family:'Manrope',serif;font-size:28px;color:var(--text);line-height:1.15;margin-bottom:10px;max-width:760px; }
+  .f2-section-title em { color:#971BFF;font-style:normal; }
+  .f2-section-sub { font-size:13px;color:#5A6A8A;margin-bottom:24px;max-width:760px;line-height:1.7; }
   .f2-numbered { display:grid;grid-template-columns:auto 1fr;gap:18px;padding:18px 22px;background:white;border:1px solid var(--border);border-radius:10px;align-items:start;margin-bottom:10px;border-left:3px solid #971BFF; }
   .f2-numbered .f2-num { font-family:'Manrope',serif;font-size:28px;color:#971BFF;line-height:1;min-width:42px; }
   .f2-numbered .f2-title { font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px; }
