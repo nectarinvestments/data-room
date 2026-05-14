@@ -1329,6 +1329,7 @@ body.tier-1 .tier-1-cta {
     <div class="nav-drop">
       <a href="#" onclick="showSec('firm');return false;" class="nd-active" id="nd-firm">The Firm</a>
       <a href="#" onclick="showSec('track');return false;" id="nd-track">Track Record</a>
+      <a href="#" onclick="showSec('fund2');return false;" id="nd-fund2">Fund 2</a>
       <a href="#" onclick="showSec('cases');return false;" id="nd-cases">Case Studies</a>
     </div>
   </div>
@@ -1626,6 +1627,321 @@ body.tier-1 .tier-1-cta {
     </div>
 
   </div><!-- /team-grid-support -->
+</div>
+
+<!-- ═══════ 1B-2: NECTAR FUND 2 OVERVIEW ═══════ -->
+<style>
+  /* Fund 2 page-specific primitives. Most of the section reuses .stat-strip,
+     .firm-eyebrow, .firm-hl, .fit-col, .options-table. */
+  .f2-section-eyebrow { font-family:'Manrope',monospace;font-size:10px;color:#971BFF;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px;margin-top:48px; }
+  .f2-section-title { font-family:'Manrope',serif;font-size:24px;color:var(--text);margin-bottom:6px; }
+  .f2-section-sub { font-size:12px;color:#5A6A8A;margin-bottom:22px;max-width:720px;line-height:1.6; }
+  .f2-numbered { display:grid;grid-template-columns:auto 1fr;gap:18px;padding:18px 22px;background:white;border:1px solid var(--border);border-radius:10px;align-items:start;margin-bottom:10px;border-left:3px solid #971BFF; }
+  .f2-numbered .f2-num { font-family:'Manrope',serif;font-size:28px;color:#971BFF;line-height:1;min-width:42px; }
+  .f2-numbered .f2-title { font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px; }
+  .f2-numbered .f2-body { font-size:12px;color:#5A6A8A;line-height:1.65; }
+  .f2-stack { background:white;border:1px solid var(--border);border-radius:12px;padding:28px;margin-bottom:16px; }
+  .f2-stack-row { padding:18px 24px;text-align:center;font-family:'Manrope',sans-serif;font-size:14px;font-weight:600;letter-spacing:.04em;margin-bottom:4px;border-radius:6px; }
+  .f2-stack-row .f2-stack-label { font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.7;margin-right:14px;font-weight:500; }
+  .f2-deal-card { background:white;border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s; }
+  .f2-deal-card:hover { transform:translateY(-2px);box-shadow:0 8px 24px rgba(1,4,29,0.08);border-color:rgba(151,27,255,0.3); }
+  .f2-deal-card .f2-deal-hdr { background:#01041D;color:white;padding:18px 20px;text-align:center; }
+  .f2-deal-card .f2-deal-name { font-size:14px;font-weight:700;margin-bottom:2px; }
+  .f2-deal-card .f2-deal-loc { font-size:11px;color:#5DE7DC;letter-spacing:.05em; }
+  .f2-deal-card .f2-deal-body { padding:6px 18px 16px; }
+  .f2-deal-card .f2-deal-row { display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(1,4,29,0.06);font-size:12px; }
+  .f2-deal-card .f2-deal-row:last-child { border:none; }
+  .f2-deal-card .f2-deal-row .f2-deal-k { color:#5A6A8A; }
+  .f2-deal-card .f2-deal-row .f2-deal-v { color:var(--text);font-weight:600; }
+  .f2-disclosure { background:rgba(1,4,29,0.03);border-left:3px solid rgba(151,27,255,0.25);border-radius:0 8px 8px 0;padding:18px 22px;margin-top:40px;font-size:10.5px;color:#5A6A8A;line-height:1.7; }
+  .f2-disclosure p { margin:0 0 10px; }
+  .f2-disclosure p:last-child { margin:0; }
+</style>
+<div id="sec-fund2" class="dr-sec">
+  <div class="firm-eyebrow">Fund Brief — February 2026</div>
+  <h1 class="firm-hl">Nectar Fund 2.<br><em>Mid-Market Mezzanine &amp; Preferred Equity.</em></h1>
+  <p style="font-size:14px;color:#5A6A8A;line-height:1.7;max-width:760px;margin-bottom:36px">A diversified portfolio of preferred-equity and cash-flow-assignment positions in stabilized small-balance commercial real estate. Sourced directly from the <strong style="color:#01041D">Nectar Fund 2 Investor Deck</strong> — see the <a href="#" onclick="showSec('terms');return false;" style="color:#971BFF">Fund Terms</a> page for share class economics, or the <a href="#" onclick="showSec('track');return false;" style="color:#971BFF">Track Record</a> with the Fund filter set to "Nectar Fund 2" for the deal-by-deal view.</p>
+
+  <!-- ─── 1. Investment Highlights ─── -->
+  <div class="f2-section-eyebrow">Investment Highlights</div>
+  <div class="f2-section-title">Six Numbers That Define the Strategy</div>
+  <div class="stat-strip" style="grid-template-columns:repeat(3,1fr);margin-bottom:18px">
+    <div class="stat-block"><div class="stat-num">$50M+</div><div class="stat-label">Capital Deployed</div><div style="font-size:10px;color:#8A9BB8;margin-top:4px">Since 2021</div></div>
+    <div class="stat-block"><div class="stat-num">93</div><div class="stat-label">Active Investments</div><div style="font-size:10px;color:#8A9BB8;margin-top:4px">42 full-cycle deals</div></div>
+    <div class="stat-block"><div class="stat-num">61%</div><div class="stat-label">Wtd. Avg. CLTV</div><div style="font-size:10px;color:#8A9BB8;margin-top:4px">Conservative positioning</div></div>
+    <div class="stat-block"><div class="stat-num">1.32x</div><div class="stat-label">Wtd. Avg. DSCR</div><div style="font-size:10px;color:#8A9BB8;margin-top:4px">Strong debt coverage</div></div>
+    <div class="stat-block"><div class="stat-num">100%</div><div class="stat-label">Distribution Record</div><div style="font-size:10px;color:#8A9BB8;margin-top:4px">Since inception</div></div>
+    <div class="stat-block"><div class="stat-num">14%+</div><div class="stat-label">Target Net Returns*</div><div style="font-size:10px;color:#8A9BB8;margin-top:4px">Unaudited</div></div>
+  </div>
+  <p style="font-size:10px;color:#8A9BB8;font-style:italic;margin-bottom:0">*Target returns are unaudited. Audited realized returns will be available upon completion of the annual fund audit.</p>
+
+  <!-- ─── 2. The Structural Capital Gap ─── -->
+  <div class="f2-section-eyebrow">The Opportunity</div>
+  <div class="f2-section-title">The Structural Capital Gap</div>
+  <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:24px;margin-bottom:24px">
+    <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:28px 32px;border-top:3px solid #971BFF">
+      <div style="font-size:18px;font-weight:700;color:#01041D;margin-bottom:14px;line-height:1.35">$2.8T in CRE maturities (2024–2028)<br>Bank retrenchment in sub-institutional lending<br>Institutional capital minimums typically $10M+</div>
+      <p style="font-size:13px;color:#3A4B6A;line-height:1.7;margin:14px 0 0">Nectar focuses on the <strong style="color:#01041D">$100K–$5M capital gap</strong> for stabilized, cash-flowing operators with meaningful equity in place — a segment that institutional capital has structurally vacated.</p>
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:#5A6A8A;line-height:1.7">
+        Founded: 2021 &nbsp;|&nbsp; Headquarters: Atlanta, GA<br>
+        SEC Registration: Regulation D, Rule 506(c)<br>
+        Legal Counsel: Nelson Mullins Riley &amp; Scarborough LLP<br>
+        Auditor: CBIZ MHM, LLC
+      </div>
+    </div>
+    <div style="background:#01041D;color:white;border-radius:12px;padding:28px 30px">
+      <div style="font-family:'Manrope',monospace;font-size:10px;color:#5DE7DC;letter-spacing:.14em;text-transform:uppercase;margin-bottom:18px">Key Metrics</div>
+      <div style="display:flex;flex-direction:column;gap:13px">
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:baseline"><div style="font-family:'Manrope',serif;font-size:22px;color:#5DE7DC;min-width:90px">$50M+</div><div style="font-size:11px;color:rgba(255,255,255,0.7)">Total Capital Deployed</div></div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:baseline"><div style="font-family:'Manrope',serif;font-size:22px;color:#5DE7DC;min-width:90px">150+</div><div style="font-size:11px;color:rgba(255,255,255,0.7)">Transactions Funded</div></div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:baseline"><div style="font-family:'Manrope',serif;font-size:22px;color:#5DE7DC;min-width:90px">6,951+</div><div style="font-size:11px;color:rgba(255,255,255,0.7)">Asset Units in Portfolio</div></div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:baseline"><div style="font-family:'Manrope',serif;font-size:22px;color:#5DE7DC;min-width:90px">29</div><div style="font-size:11px;color:rgba(255,255,255,0.7)">States with Active Positions</div></div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:baseline"><div style="font-family:'Manrope',serif;font-size:22px;color:#5DE7DC;min-width:90px">100%</div><div style="font-size:11px;color:rgba(255,255,255,0.7)">Perfect Distribution Record</div></div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:baseline"><div style="font-family:'Manrope',serif;font-size:22px;color:#5DE7DC;min-width:90px">$286M</div><div style="font-size:11px;color:rgba(255,255,255,0.7)">Avg. Sponsor AUM</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 3. Investment Strategy ─── -->
+  <div class="f2-section-eyebrow">Investment Strategy</div>
+  <div class="f2-section-title">Five Operating Principles</div>
+  <div class="f2-section-sub">Every position in the fund must satisfy all five principles before capital is committed.</div>
+  <div class="f2-numbered"><div class="f2-num">01</div><div><div class="f2-title">Provide liquidity to experienced operators</div><div class="f2-body">10+ year track records, $50M–$500M portfolio sizes, asset-rich balance sheets. Capital fills a working-capital gap rather than a distress hole.</div></div></div>
+  <div class="f2-numbered"><div class="f2-num">02</div><div><div class="f2-title">Collateralized by equity stakes and income streams</div><div class="f2-body">Preferred equity positions amended into the operating agreement, plus assignment of property operating cash flows for continuous debt service coverage.</div></div></div>
+  <div class="f2-numbered"><div class="f2-num">03</div><div><div class="f2-title">Stabilized properties with 12+ months operating history</div><div class="f2-body">No construction risk, no lease-up risk. 85%+ occupancy at funding. Cash flow is observable and underwritable, not projected.</div></div></div>
+  <div class="f2-numbered"><div class="f2-num">04</div><div><div class="f2-title">Sub-70% senior LTV profile</div><div class="f2-body">Meaningful equity cushion below the Nectar position. Portfolio-weighted CLTV of 61% leaves room for adverse value movement before principal is at risk.</div></div></div>
+  <div class="f2-numbered"><div class="f2-num">05</div><div><div class="f2-title">Focus on workforce and naturally occurring affordable housing</div><div class="f2-body">Multifamily in top-100 MSAs, 1970s–early-2000s vintage. Rent levels track local wages, which historically smooths cash flow through cycles.</div></div></div>
+
+  <!-- ─── 4. Target Profile ─── -->
+  <div class="f2-section-eyebrow">Target Profile</div>
+  <div class="f2-section-title">Who and What We Underwrite</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+    <div class="fit-col">
+      <div class="fit-col-hl" style="color:#971BFF">Typical Borrower</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid var(--border);font-size:12px"><span style="color:#5A6A8A">Operating experience</span><span style="font-weight:600;color:var(--text)">10+ years</span></div>
+        <div style="display:flex;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid var(--border);font-size:12px"><span style="color:#5A6A8A">Portfolio size</span><span style="font-weight:600;color:var(--text)">$50M–$500M</span></div>
+        <div style="display:flex;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid var(--border);font-size:12px"><span style="color:#5A6A8A">Balance sheet profile</span><span style="font-weight:600;color:var(--text)">Asset-rich, cash-flowing</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#5A6A8A">Avg. Sponsor AUM</span><span style="font-weight:600;color:var(--text)">$286M</span></div>
+      </div>
+    </div>
+    <div class="fit-col">
+      <div class="fit-col-hl" style="color:#971BFF">Typical Asset</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid var(--border);font-size:12px"><span style="color:#5A6A8A">Unit count</span><span style="font-weight:600;color:var(--text)">50–200 units</span></div>
+        <div style="display:flex;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid var(--border);font-size:12px"><span style="color:#5A6A8A">Geography</span><span style="font-weight:600;color:var(--text)">Top-100 MSA</span></div>
+        <div style="display:flex;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid var(--border);font-size:12px"><span style="color:#5A6A8A">Vintage</span><span style="font-weight:600;color:var(--text)">1970s–early 2000s</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#5A6A8A">Occupancy at funding</span><span style="font-weight:600;color:var(--text)">85%+</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 5. Underwriting Framework ─── -->
+  <div class="f2-section-eyebrow">Underwriting Framework</div>
+  <div class="f2-section-title">Four Pillars, Quantified</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">
+    <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:18px 16px;text-align:center;border-top:3px solid #971BFF">
+      <div style="width:32px;height:32px;border-radius:50%;background:#971BFF;color:white;font-family:'Manrope',serif;font-size:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">1</div>
+      <div style="font-size:13px;font-weight:700;color:#01041D;margin-bottom:6px">Sponsor Quality</div>
+      <div style="font-size:11px;color:#5A6A8A;line-height:1.5">Track record, financial capacity, AUM verification, operational capability</div>
+    </div>
+    <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:18px 16px;text-align:center;border-top:3px solid #971BFF">
+      <div style="width:32px;height:32px;border-radius:50%;background:#971BFF;color:white;font-family:'Manrope',serif;font-size:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">2</div>
+      <div style="font-size:13px;font-weight:700;color:#01041D;margin-bottom:6px">Asset Cash Flow</div>
+      <div style="font-size:11px;color:#5A6A8A;line-height:1.5">DSCR analysis via Plaid, physical inspection, environmental and legal review</div>
+    </div>
+    <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:18px 16px;text-align:center;border-top:3px solid #971BFF">
+      <div style="width:32px;height:32px;border-radius:50%;background:#971BFF;color:white;font-family:'Manrope',serif;font-size:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">3</div>
+      <div style="font-size:13px;font-weight:700;color:#01041D;margin-bottom:6px">Equity Cushion</div>
+      <div style="font-size:11px;color:#5A6A8A;line-height:1.5">CLTV ceiling &lt;80%, 12+ months stabilized history, 85%+ occupancy</div>
+    </div>
+    <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:18px 16px;text-align:center;border-top:3px solid #971BFF">
+      <div style="width:32px;height:32px;border-radius:50%;background:#971BFF;color:white;font-family:'Manrope',serif;font-size:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">4</div>
+      <div style="font-size:13px;font-weight:700;color:#01041D;margin-bottom:6px">Structure &amp; Enforcement</div>
+      <div style="font-size:11px;color:#5A6A8A;line-height:1.5">Capital stack design, covenant negotiation, lien confirmation, reserve establishment</div>
+    </div>
+  </div>
+  <div class="options-table-wrap">
+    <table class="options-table">
+      <thead><tr><th>Portfolio Metric</th><th class="th-current">Nectar Portfolio</th><th>Industry Avg.</th></tr></thead>
+      <tbody>
+        <tr><td style="font-weight:600;color:var(--text)">Average CLTV</td><td class="td-current">61%</td><td class="td-dim">75–80%</td></tr>
+        <tr><td style="font-weight:600;color:var(--text)">Average DSCR</td><td class="td-current">1.32x</td><td class="td-dim">1.2x</td></tr>
+        <tr><td style="font-weight:600;color:var(--text)">Minimum Occupancy</td><td class="td-current">85%+</td><td class="td-dim">No standard</td></tr>
+        <tr><td style="font-weight:600;color:var(--text)">Funding Timeline</td><td class="td-current">7–10 days</td><td class="td-dim">60–90 days</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ─── 6. Structural Protections ─── -->
+  <div class="f2-section-eyebrow">Structural Protections</div>
+  <div class="f2-section-title">Five Layers Between Investor Capital and Loss</div>
+  <div class="f2-section-sub">Each protection acts independently — a failure in any single mechanism is recoverable through the others.</div>
+  <div class="f2-numbered"><div class="f2-num">01</div><div><div class="f2-title">Personal Guaranty</div><div class="f2-body">High-net-worth sponsors ($50M+ net worth typical) provide full personal recourse on all positions.</div></div></div>
+  <div class="f2-numbered"><div class="f2-num">02</div><div><div class="f2-title">Preferred Equity Position</div><div class="f2-body">Amended operating agreement with unrestricted power of attorney to sell assets upon default.</div></div></div>
+  <div class="f2-numbered"><div class="f2-num">03</div><div><div class="f2-title">UCC-1 &amp; Springing Lien</div><div class="f2-body">Filed security interest in the GP entity plus a springing lien on real property triggered upon borrower default.</div></div></div>
+  <div class="f2-numbered"><div class="f2-num">04</div><div><div class="f2-title">Payment Reserves</div><div class="f2-body">3+ months of principal and interest payments held in escrow by Nectar as an immediate liquidity buffer.</div></div></div>
+  <div class="f2-numbered"><div class="f2-num">05</div><div><div class="f2-title">Cash Flow Assignment</div><div class="f2-body">Direct assignment of property operating cash flows for continuous debt service coverage.</div></div></div>
+  <div style="font-size:12px;font-style:italic;color:#971BFF;font-weight:600;margin-top:14px;margin-bottom:32px">Layered structural protection with no single point of failure.</div>
+
+  <!-- ─── 7. Capital Stack Position ─── -->
+  <div class="f2-section-eyebrow">Capital Stack Position</div>
+  <div class="f2-section-title">Between Meaningful Sponsor Equity and Conservative Senior Debt</div>
+  <div class="f2-stack">
+    <div class="f2-stack-row" style="background:#01041D;color:white"><span class="f2-stack-label">Sponsor Equity</span>35–50%</div>
+    <div class="f2-stack-row" style="background:#5DE7DC;color:#01041D"><span class="f2-stack-label">Nectar Position</span>5–10%</div>
+    <div class="f2-stack-row" style="background:#D5D8E0;color:#01041D"><span class="f2-stack-label">Senior Mortgage</span>45–55%</div>
+    <div style="text-align:center;font-size:11px;color:#5A6A8A;font-style:italic;margin-top:14px">Preferred Equity &amp; Cash Flow Assignments</div>
+  </div>
+
+  <!-- ─── 8. Performance Track Record ─── -->
+  <div class="f2-section-eyebrow">Performance Track Record</div>
+  <div class="f2-section-title">Realized Outcomes Since Inception</div>
+  <div class="stat-strip" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px">
+    <div class="stat-block"><div class="stat-num" style="color:#971BFF">14%+</div><div class="stat-label">Target Net Returns*</div></div>
+    <div class="stat-block"><div class="stat-num" style="color:#971BFF">&lt;1%</div><div class="stat-label">Cumulative Default Rate</div></div>
+    <div class="stat-block"><div class="stat-num" style="color:#971BFF">$0</div><div class="stat-label">Realized Principal Losses</div></div>
+    <div class="stat-block"><div class="stat-num" style="color:#971BFF">100%</div><div class="stat-label">Distribution Record</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:6px">
+    <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:24px 28px">
+      <div style="font-family:'Manrope',monospace;font-size:10px;color:#971BFF;letter-spacing:.14em;text-transform:uppercase;margin-bottom:14px">Year-over-Year Growth</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid var(--border);font-size:13px"><span style="color:#5A6A8A">2021 → 2022</span><span style="font-weight:700;color:var(--text)">100% growth</span></div>
+        <div style="display:flex;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid var(--border);font-size:13px"><span style="color:#5A6A8A">2022 → 2023</span><span style="font-weight:700;color:var(--text)">750% growth</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:#5A6A8A">2023 → 2024</span><span style="font-weight:700;color:var(--text)">191% growth</span></div>
+      </div>
+    </div>
+    <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:24px 28px">
+      <div style="font-family:'Manrope',monospace;font-size:10px;color:#971BFF;letter-spacing:.14em;text-transform:uppercase;margin-bottom:14px">Portfolio Health</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid var(--border);font-size:13px"><span style="color:#5A6A8A">Avg. Weighted CLTV</span><span style="font-weight:700;color:var(--text)">61%</span></div>
+        <div style="display:flex;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid var(--border);font-size:13px"><span style="color:#5A6A8A">Avg. Weighted DSCR</span><span style="font-weight:700;color:var(--text)">2.2x</span></div>
+        <div style="display:flex;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid var(--border);font-size:13px"><span style="color:#5A6A8A">Delinquency Rate</span><span style="font-weight:700;color:var(--text)">3.4%</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:#5A6A8A">Cumulative Default Rate</span><span style="font-weight:700;color:var(--text)">&lt;1%</span></div>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:10px;color:#8A9BB8;font-style:italic;margin-top:10px;margin-bottom:0">*Target returns are unaudited and reflect internal calculations. The fund has not yet completed an independent performance audit.</p>
+
+  <!-- ─── 9. Representative Originations ─── -->
+  <div class="f2-section-eyebrow">Representative Originations</div>
+  <div class="f2-section-title">Three Live Positions, Click to Inspect</div>
+  <div class="f2-section-sub">Each card opens the deal's one-pager in the dashboard's modal — where you can see funding history, current balance, and underwriting context.</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:6px">
+    <div class="f2-deal-card" onclick="openOPById('1241')">
+      <div class="f2-deal-hdr"><div class="f2-deal-name">Penn Garden Apartments</div><div class="f2-deal-loc">Pennsauken, NJ</div></div>
+      <div class="f2-deal-body">
+        <div class="f2-deal-row"><span class="f2-deal-k">Units</span><span class="f2-deal-v">116 Units</span></div>
+        <div class="f2-deal-row"><span class="f2-deal-k">Use of Funds</span><span class="f2-deal-v">Fund Capital Improvements</span></div>
+        <div class="f2-deal-row"><span class="f2-deal-k">CLTV</span><span class="f2-deal-v">50.5%</span></div>
+        <div class="f2-deal-row"><span class="f2-deal-k">DSCR</span><span class="f2-deal-v">1.70x</span></div>
+        <div class="f2-deal-row"><span class="f2-deal-k">Occupancy</span><span class="f2-deal-v">99%</span></div>
+        <div class="f2-deal-row"><span class="f2-deal-k">Rent Growth</span><span class="f2-deal-v" style="color:#1A9E6E">+41.4%</span></div>
+      </div>
+    </div>
+    <div class="f2-deal-card" onclick="openOPById('1280')">
+      <div class="f2-deal-hdr"><div class="f2-deal-name">The Meadows</div><div class="f2-deal-loc">El Paso, TX</div></div>
+      <div class="f2-deal-body">
+        <div class="f2-deal-row"><span class="f2-deal-k">Units</span><span class="f2-deal-v">100 Units</span></div>
+        <div class="f2-deal-row"><span class="f2-deal-k">Use of Funds</span><span class="f2-deal-v">Fund additional Acquisition</span></div>
+        <div class="f2-deal-row"><span class="f2-deal-k">CLTV</span><span class="f2-deal-v">55.6%</span></div>
+        <div class="f2-deal-row"><span class="f2-deal-k">DSCR</span><span class="f2-deal-v">1.58x</span></div>
+        <div class="f2-deal-row"><span class="f2-deal-k">Occupancy</span><span class="f2-deal-v">93%</span></div>
+        <div class="f2-deal-row"><span class="f2-deal-k">Rent Growth</span><span class="f2-deal-v" style="color:#1A9E6E">+28.4%</span></div>
+      </div>
+    </div>
+    <div class="f2-deal-card" onclick="openOPById('1279')">
+      <div class="f2-deal-hdr"><div class="f2-deal-name">Mary Lin Portfolio</div><div class="f2-deal-loc">Dayton, OH</div></div>
+      <div class="f2-deal-body">
+        <div class="f2-deal-row"><span class="f2-deal-k">Units</span><span class="f2-deal-v">88 Units</span></div>
+        <div class="f2-deal-row"><span class="f2-deal-k">Use of Funds</span><span class="f2-deal-v">Fund additional Acquisitions</span></div>
+        <div class="f2-deal-row"><span class="f2-deal-k">CLTV</span><span class="f2-deal-v">69.1%</span></div>
+        <div class="f2-deal-row"><span class="f2-deal-k">DSCR</span><span class="f2-deal-v">N/A</span></div>
+        <div class="f2-deal-row"><span class="f2-deal-k">Occupancy</span><span class="f2-deal-v">98.8%</span></div>
+        <div class="f2-deal-row"><span class="f2-deal-k">Rent Growth</span><span class="f2-deal-v" style="color:#1A9E6E">Strong</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 10. Summary of Fund Terms (3 vehicles) ─── -->
+  <div class="f2-section-eyebrow">Investment Vehicles</div>
+  <div class="f2-section-title">Summary of Fund Terms</div>
+  <div class="f2-section-sub">Three ways to participate. The diversified fund offers exposure to the whole portfolio; promissory notes offer subordinated debt at a higher coupon; co-investments offer deal-by-deal selection.</div>
+  <div class="options-table-wrap">
+    <table class="options-table">
+      <thead>
+        <tr>
+          <th>Term</th>
+          <th class="th-current">Nectar Fund 2<br><span style="font-weight:400;text-transform:none;letter-spacing:0;color:#5A6A8A;font-size:10px">Diversified Portfolio</span></th>
+          <th class="th-current" style="color:#6B35C8">Promissory Notes<br><span style="font-weight:400;text-transform:none;letter-spacing:0;color:#5A6A8A;font-size:10px">Subordinated Debt</span></th>
+          <th class="th-current" style="color:#1A9E6E">Co-Investments<br><span style="font-weight:400;text-transform:none;letter-spacing:0;color:#5A6A8A;font-size:10px">Individual Deal Selection</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="font-weight:600;color:var(--text)">Class A coupon / target IRR</td><td class="td-current">14% annually</td><td style="color:#6B35C8;font-weight:500">16% annually</td><td style="color:#1A9E6E;font-weight:500">12–18% target IRR</td></tr>
+        <tr><td style="font-weight:600;color:var(--text)">Class A minimum</td><td class="td-current">$500,000</td><td style="color:#6B35C8;font-weight:500">$250,000</td><td style="color:#1A9E6E;font-weight:500">$100,000 per deal</td></tr>
+        <tr><td style="font-weight:600;color:var(--text)">Class B coupon</td><td class="td-current">12% annually</td><td style="color:#6B35C8;font-weight:500">14% annually</td><td class="td-dim">n/a</td></tr>
+        <tr><td style="font-weight:600;color:var(--text)">Class B minimum</td><td class="td-current">$100,000</td><td style="color:#6B35C8;font-weight:500">$25,000</td><td class="td-dim">n/a</td></tr>
+        <tr><td style="font-weight:600;color:var(--text)">Distributions</td><td class="td-current">Quarterly</td><td style="color:#6B35C8;font-weight:500">Quarterly</td><td style="color:#1A9E6E;font-weight:500">Monthly P&amp;I</td></tr>
+        <tr><td style="font-weight:600;color:var(--text)">Lock-up / Term</td><td class="td-current">12 quarters</td><td style="color:#6B35C8;font-weight:500">3 years, renewable</td><td style="color:#1A9E6E;font-weight:500">Per deal</td></tr>
+        <tr><td style="font-weight:600;color:var(--text)">Liquidity</td><td class="td-current">Quarterly after lock-up</td><td class="td-dim">At term</td><td style="color:#1A9E6E;font-weight:500">True sale / BK remote</td></tr>
+        <tr><td style="font-weight:600;color:var(--text)">Participation / Selection</td><td class="td-dim">Whole portfolio</td><td class="td-dim">Whole portfolio (debt)</td><td style="color:#1A9E6E;font-weight:500">Investor chooses, up to 90%</td></tr>
+        <tr><td style="font-weight:600;color:var(--text)">Servicer</td><td class="td-current">Nectar</td><td style="color:#6B35C8;font-weight:500">Nectar</td><td style="color:#1A9E6E;font-weight:500">Nectar</td></tr>
+        <tr><td style="font-weight:600;color:var(--text)">IRA eligible</td><td class="td-current">Yes</td><td class="td-dim">No</td><td class="td-dim">Varies</td></tr>
+        <tr><td style="font-weight:600;color:var(--text)">Tax reporting</td><td class="td-current">K-1</td><td style="color:#6B35C8;font-weight:500">1099-INT</td><td style="color:#1A9E6E;font-weight:500">Pass-through</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="margin-top:14px;padding:14px 18px;background:rgba(1,4,29,0.03);border-left:3px solid rgba(201,168,76,0.4);border-radius:0 8px 8px 0;font-size:11px;color:var(--dim);line-height:1.7">
+    Note: the dashboard's <a href="#" onclick="showSec('terms');return false;" style="color:#971BFF">Fund Terms</a> page describes a different share-class structure (11% fixed / 8% pref + 80/20). Confirm which terms apply for your investment context before subscribing.
+  </div>
+
+  <!-- ─── 11. Operational Infrastructure ─── -->
+  <div class="f2-section-eyebrow">Operational Infrastructure</div>
+  <div class="f2-section-title">Institutional-Grade Counterparties</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:6px">
+    <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:18px 20px">
+      <div style="font-family:'Manrope',monospace;font-size:9.5px;color:#5DE7DC;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px">Legal Counsel</div>
+      <div style="font-size:14px;font-weight:700;color:#01041D;margin-bottom:2px">Nelson Mullins Riley &amp; Scarborough LLP</div>
+      <div style="font-size:11px;color:#5A6A8A">Atlanta, GA</div>
+    </div>
+    <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:18px 20px">
+      <div style="font-family:'Manrope',monospace;font-size:9.5px;color:#5DE7DC;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px">Auditor</div>
+      <div style="font-size:14px;font-weight:700;color:#01041D;margin-bottom:2px">HLB Gross Collins</div>
+      <div style="font-size:11px;color:#5A6A8A">Atlanta, GA</div>
+    </div>
+    <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:18px 20px">
+      <div style="font-family:'Manrope',monospace;font-size:9.5px;color:#5DE7DC;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px">Calculation Agent</div>
+      <div style="font-size:14px;font-weight:700;color:#01041D;margin-bottom:2px">Finley</div>
+      <div style="font-size:11px;color:#5A6A8A">Third party verification</div>
+    </div>
+    <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:18px 20px">
+      <div style="font-family:'Manrope',monospace;font-size:9.5px;color:#5DE7DC;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px">SEC Registration</div>
+      <div style="font-size:14px;font-weight:700;color:#01041D;margin-bottom:2px">Regulation D, Rule 506(c)</div>
+      <div style="font-size:11px;color:#5A6A8A">Accredited investors only</div>
+    </div>
+    <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:18px 20px">
+      <div style="font-family:'Manrope',monospace;font-size:9.5px;color:#5DE7DC;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px">Fund Structure</div>
+      <div style="font-size:14px;font-weight:700;color:#01041D;margin-bottom:2px">Delaware LLC</div>
+      <div style="font-size:11px;color:#5A6A8A">Managed by RE Nectar, Inc.</div>
+    </div>
+    <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:18px 20px">
+      <div style="font-family:'Manrope',monospace;font-size:9.5px;color:#5DE7DC;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px">Backup Servicer</div>
+      <div style="font-size:14px;font-weight:700;color:#01041D;margin-bottom:2px">Concord Servicing</div>
+      <div style="font-size:11px;color:#5A6A8A">Bankruptcy remote structure</div>
+    </div>
+  </div>
+
+  <!-- ─── 12. Disclosures ─── -->
+  <div class="f2-disclosure">
+    <p><strong style="color:#01041D">Important Disclosures.</strong> This presentation is provided for informational purposes only and does not constitute an offer to sell or a solicitation of an offer to buy any securities. Securities are offered only to accredited investors pursuant to Rule 506(c) of Regulation D under the Securities Act of 1933, as amended. Past performance is not indicative of future results. All investments involve risk, including the possible loss of principal.</p>
+    <p>The information contained herein is based on data available as of the date of this presentation and is subject to change without notice. This material is confidential and intended solely for the use of the recipient.</p>
+    <p>Prospective investors should carefully review the Private Placement Memorandum (PPM) and related offering documents before making an investment decision. RE Nectar, Inc. does not provide legal, tax, or accounting advice.</p>
+    <p>Target returns and projections contained herein are based on internal estimates and assumptions that may not be realized. Actual results may differ materially from these projections. The fund has not yet completed an independent performance audit.</p>
+    <p>Third-party data and market statistics cited in this presentation are sourced from publicly available industry reports. While the fund believes these sources to be reliable, it has not independently verified all such information.</p>
+    <p>Legal Counsel: Nelson Mullins Riley &amp; Scarborough LLP &nbsp;|&nbsp; Auditor: CBIZ MHM, LLC</p>
+  </div>
 </div>
 
 <!-- ═══════ 1C: CASE STUDIES ═══════ -->
@@ -5615,7 +5931,7 @@ function initApp() {
 
 // ═══════ DATA ROOM NAVIGATION ═══════
 const SEC_PARENT = {
-  firm:'nb-wwa', track:'nb-wwa', cases:'nb-wwa',
+  firm:'nb-wwa', track:'nb-wwa', fund2:'nb-wwa', cases:'nb-wwa',
   market:'nb-opp', operate:'nb-opp', whynectar:'nb-opp',
   terms:'nb-invest', fit:'nb-invest'
 };
