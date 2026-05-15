@@ -1351,7 +1351,11 @@ body.tier-1 .tier-1-cta {
   <a class="tier-1-cta"
      href="mailto:lilato@usenectar.com?subject=Nectar%20Investor%20Data%20Room%20-%20Full%20Access%20Request&body=Hi,%0A%0AI%20am%20interested%20in%20receiving%20full%20access%20to%20the%20Nectar%20Investor%20Data%20Room.%0A%0AThank%20you."
      >Request Full Access →</a>
+  <button id="navToggle" class="nav-toggle" type="button" aria-label="Menu" aria-expanded="false">
+    <span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span>
+  </button>
 </nav>
+<div id="navBackdrop" class="nav-backdrop" aria-hidden="true"></div>
 
 
 <!-- ═══════ 1A: THE FIRM ═══════ -->
@@ -1659,6 +1663,251 @@ body.tier-1 .tier-1-cta {
   .f2-disclosure { background:rgba(1,4,29,0.03);border-left:3px solid rgba(151,27,255,0.25);border-radius:0 8px 8px 0;padding:18px 22px;margin-top:40px;font-size:10.5px;color:#5A6A8A;line-height:1.7; }
   .f2-disclosure p { margin:0 0 10px; }
   .f2-disclosure p:last-child { margin:0; }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     MOBILE-FIRST OVERRIDES
+     Base rules below target mobile (320-479px). Each component then opts
+     back up to its desktop layout via min-width media queries. Placed at
+     the END of the cascade so it overrides earlier desktop-only rules.
+     ════════════════════════════════════════════════════════════════════════ */
+
+  /* ─── Topnav (mobile = hamburger drawer) ─── */
+  .nav-toggle {
+    display: flex; flex-direction: column; justify-content: space-around;
+    width: 40px; height: 40px; padding: 9px 8px;
+    background: none; border: 1px solid rgba(255,255,255,0.18); border-radius: 6px;
+    cursor: pointer; margin-left: auto;
+    position: relative; z-index: 210;
+  }
+  .nav-toggle-bar { display: block; height: 2px; background: #fff; border-radius: 2px; transition: transform .2s, opacity .15s; }
+  body.nav-open .nav-toggle-bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  body.nav-open .nav-toggle-bar:nth-child(2) { opacity: 0; }
+  body.nav-open .nav-toggle-bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  .nav-backdrop {
+    position: fixed; inset: 0; background: rgba(1,4,29,0.55); backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none; transition: opacity .2s ease;
+    z-index: 150;
+  }
+  body.nav-open .nav-backdrop { opacity: 1; pointer-events: auto; }
+
+  /* Hide inline nav items by default; show as drawer when .nav-open */
+  #topnav .nav-item { display: none; }
+  #topnav .tier-1-cta:not(.tier-1-cta) { /* noop guard */ }
+  #topnav > .tier-1-cta { display: none; } /* the inline "Request Full Access" link in the topnav (the floating one stays for tier-1) */
+  body.nav-open #topnav {
+    flex-wrap: wrap; align-items: flex-start;
+  }
+  body.nav-open #topnav .nav-item {
+    display: block;
+    flex: 1 1 100%;
+    background: #06093A;
+    border-top: 1px solid rgba(151,27,255,0.18);
+    padding: 4px 0;
+  }
+  body.nav-open #topnav .nav-btn {
+    width: 100%; text-align: left; padding: 14px 24px; font-size: 14px; color: #fff;
+  }
+  body.nav-open #topnav .nav-btn::after { content: ''; }
+  body.nav-open #topnav .nav-drop {
+    display: block; position: static; min-width: 0; box-shadow: none; border: none; background: transparent; border-radius: 0;
+  }
+  body.nav-open #topnav .nav-drop a {
+    padding: 12px 36px; font-size: 13px; color: rgba(255,255,255,0.8); border-bottom: 1px solid rgba(151,27,255,0.08);
+  }
+  body.nav-open #topnav .nav-drop a:hover, body.nav-open #topnav .nav-drop a.nd-active { color: #971BFF; background: rgba(151,27,255,0.10); }
+
+  /* Logo scales down on phones */
+  #topnav .tn-logo svg { height: 26px; }
+
+  /* ─── Hero typography ─── */
+  .firm-hl { font-size: 26px; line-height: 1.2; max-width: 100%; margin-bottom: 22px; }
+  .firm-eyebrow { letter-spacing: .14em; margin-bottom: 10px; }
+
+  /* ─── Main container padding ─── */
+  .main { padding: 20px 16px; }
+
+  /* CSS Grid items default to min-width:auto which prevents them from
+     shrinking below their content's min-content. At mobile widths this
+     causes horizontal overflow. Force min-width:0 on all grid items
+     inside the major content sections so columns can shrink freely. */
+  #sec-firm > * > *, #sec-firm > * > * > *,
+  #sec-fund2 > * > *, #sec-fund2 > * > * > *,
+  #sec-cases > * > *, #sec-track > * > *,
+  #sec-market > * > *, #sec-operate > * > *, #sec-whynectar > * > *,
+  #sec-terms > * > *, #sec-fit > * > *,
+  .op > *, .op > * > * { min-width: 0; }
+
+  /* ─── Stat strips: 1-col mobile baseline ─── */
+  .stat-strip { grid-template-columns: minmax(0, 1fr) !important; }
+  .stat-block { padding: 16px 14px; text-align: center; }
+  .stat-num { font-size: 28px; }
+
+  /* ─── KPI grid (Track Record): 1-col baseline ─── */
+  .kpi-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 10px; }
+
+  /* ─── Charts grid: 1-col baseline ─── */
+  .charts-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 14px; }
+  .charts-grid canvas { min-height: 220px; }
+
+  /* ─── Track Record filters: stack vertically, touch-friendly ─── */
+  .filters { flex-direction: column; align-items: stretch; gap: 8px; }
+  .filters select { width: 100%; min-height: 44px; font-size: 14px; padding: 10px 12px; }
+  .filters .pill-group { width: 100%; margin: 4px 0 0 !important; justify-content: stretch; }
+  .filters .pill-group .pill { flex: 1; min-height: 40px; }
+
+  /* ─── Team grid + flip cards ─── */
+  .team-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .flip-wrap { max-width: 100%; }
+
+  /* ─── Founder narrative (text + photo) ─── */
+  #sec-firm > div[style*="grid-template-columns:1fr 1fr 1fr"] { grid-template-columns: minmax(0, 1fr) !important; }
+  #sec-firm div[style*="grid-template-columns:1fr 200px"],
+  #sec-firm div[style*="grid-template-columns:200px 1fr"] { grid-template-columns: minmax(0, 1fr) !important; gap: 24px !important; }
+  #sec-firm div[style*="grid-template-columns:1fr 200px"] > div:last-child,
+  #sec-firm div[style*="grid-template-columns:200px 1fr"] > div:first-child { order: -1; }
+
+  /* ─── Cards / panels: reduce padding on mobile ─── */
+  .fit-col, .cs-card, .gap-table-wrap { padding-left: 16px; padding-right: 16px; }
+
+  /* ─── Tables: ensure horizontal scroll on narrow viewports ─── */
+  .options-table-wrap, .table-wrap, .gap-table-wrap { -webkit-overflow-scrolling: touch; }
+  .options-table { min-width: 560px; } /* ensures cells don't crush; user scrolls horizontally */
+
+  /* ─── Fund 2 page grid overrides ─── */
+  #sec-fund2 > .stat-strip { grid-template-columns: minmax(0, 1fr) !important; }
+  #sec-fund2 > div[style*="grid-template-columns:1.4fr 1fr"],
+  #sec-fund2 > div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: minmax(0, 1fr) !important; gap: 14px !important; }
+  #sec-fund2 > div[style*="grid-template-columns:repeat(4,1fr)"],
+  #sec-fund2 > div[style*="grid-template-columns:repeat(3,1fr)"] { grid-template-columns: minmax(0, 1fr) !important; gap: 14px !important; }
+  /* Inner Key Metrics rows in the dark sidebar: drop the 90px min-width on
+     the value column so the row can fit narrow viewports. */
+  #sec-fund2 div[style*="grid-template-columns:auto 1fr"] { grid-template-columns: minmax(0, auto) minmax(0, 1fr) !important; gap: 12px !important; }
+  #sec-fund2 div[style*="grid-template-columns:auto 1fr"] > div { min-width: 0 !important; }
+  #sec-fund2 .f2-numbered { padding: 14px 16px; }
+  #sec-fund2 .f2-stack-row { padding: 14px 16px; font-size: 13px; }
+  .f2-section-title { font-size: 22px; }
+
+  /* ─── Section eyebrow / Fund 2 section title: gentler on mobile ─── */
+  .opp-eyebrow, .cs-eyebrow, .nc-eyebrow, .team-eyebrow { font-size: 9px; }
+  h2.terms-hl, h2.fit-hl, h2.cs-hl, h2.opp-hl { font-size: 24px; line-height: 1.2; }
+
+  /* ─── Modal: bottom-sheet on mobile ─── */
+  .op {
+    top: auto; left: 0; right: 0; bottom: 0;
+    transform: translateY(0);
+    width: 100vw; max-width: none;
+    height: 88vh; max-height: 88vh;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: max(env(safe-area-inset-bottom), 16px);
+    animation: opSheetUp .26s ease-out;
+    overflow-y: auto;
+  }
+  @keyframes opSheetUp { from { transform: translateY(100%) } to { transform: translateY(0) } }
+  /* Drag-affordance pill at the top of the sheet */
+  .op::before {
+    content: ''; display: block;
+    width: 38px; height: 4px;
+    background: rgba(1,4,29,0.22); border-radius: 2px;
+    margin: 6px auto 4px;
+    position: sticky; top: 6px; z-index: 2;
+  }
+  .op-2col { grid-template-columns: minmax(0, 1fr) !important; }
+  .op-mbar { grid-template-columns: minmax(0, 1fr) !important; gap: 10px; }
+  .op-photo { height: 160px; }
+  .op-x { min-width: 44px; min-height: 44px; font-size: 22px; display: inline-flex; align-items: center; justify-content: center; }
+  body.op-open { position: fixed; width: 100%; overflow: hidden; } /* kill iOS scroll-bounce on bg */
+  @media (prefers-reduced-motion: reduce) {
+    .op { animation: none; }
+  }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     TIER UP: ≥ 480px (large phones)
+     ════════════════════════════════════════════════════════════════════════ */
+  @media (min-width: 480px) {
+    .firm-hl { font-size: 30px; }
+    .stat-strip { grid-template-columns: repeat(2, 1fr) !important; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    #sec-fund2 > .stat-strip { grid-template-columns: repeat(2, 1fr) !important; }
+    #sec-fund2 > div[style*="grid-template-columns:repeat(4,1fr)"],
+    #sec-fund2 > div[style*="grid-template-columns:repeat(3,1fr)"] { grid-template-columns: repeat(2, 1fr) !important; }
+  }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     TIER UP: ≥ 768px (tablet portrait — desktop nav, larger grids)
+     ════════════════════════════════════════════════════════════════════════ */
+  @media (min-width: 768px) {
+    /* Topnav back to inline */
+    .nav-toggle { display: none; }
+    .nav-backdrop { display: none; }
+    #topnav .nav-item { display: block; }
+    #topnav > .tier-1-cta { display: flex; }
+    #topnav .tn-logo svg { height: 32px; }
+    /* Hero scales up */
+    .firm-hl { font-size: 32px; }
+    /* Main padding */
+    .main { padding: 24px 24px; }
+    /* Stat strips: 4-up (the default desktop count for the firm hero is 4) */
+    .stat-strip { grid-template-columns: repeat(4, 1fr) !important; }
+    .kpi-grid { grid-template-columns: repeat(3, 1fr) !important; }
+    .charts-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .team-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    /* Filters back to row */
+    .filters { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .filters select { width: auto; min-height: auto; font-size: 12px; padding: 7px 28px 7px 12px; }
+    .filters .pill-group { width: auto; margin-left: auto !important; }
+    .filters .pill-group .pill { flex: 0 0 auto; }
+    /* Founder narrative back to 2-col */
+    #sec-firm div[style*="grid-template-columns:1fr 200px"] { grid-template-columns: 1fr 200px !important; }
+    #sec-firm div[style*="grid-template-columns:200px 1fr"] { grid-template-columns: 200px 1fr !important; }
+    #sec-firm div[style*="grid-template-columns:1fr 200px"] > div:last-child,
+    #sec-firm div[style*="grid-template-columns:200px 1fr"] > div:first-child { order: 0; }
+    #sec-firm > div[style*="grid-template-columns:1fr 1fr 1fr"] { grid-template-columns: 1fr 1fr 1fr !important; }
+    /* Fund 2 grids step up */
+    #sec-fund2 > .stat-strip { grid-template-columns: repeat(3, 1fr) !important; }
+    #sec-fund2 > div[style*="grid-template-columns:1.4fr 1fr"] { grid-template-columns: 1.4fr 1fr !important; }
+    #sec-fund2 > div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr 1fr !important; }
+    #sec-fund2 > div[style*="grid-template-columns:repeat(4,1fr)"] { grid-template-columns: repeat(4, 1fr) !important; }
+    #sec-fund2 > div[style*="grid-template-columns:repeat(3,1fr)"] { grid-template-columns: repeat(3, 1fr) !important; }
+    .f2-section-title { font-size: 26px; }
+    /* Modal goes back to centered shadowbox above 768px (≥1024 polishes further) */
+    .op {
+      top: 50%; left: 50%; right: auto; bottom: auto;
+      transform: translate(-50%, -50%);
+      width: calc(100vw - 48px); max-width: 720px;
+      height: auto; max-height: calc(100vh - 48px);
+      border-radius: 14px;
+      padding-bottom: 0;
+      animation: opModalIn .2s ease;
+    }
+    .op::before { display: none; } /* no drag pill on shadowbox */
+    .op-2col { grid-template-columns: 1fr 1fr !important; }
+    .op-mbar { grid-template-columns: repeat(3, 1fr) !important; }
+    .op-photo { height: 240px; }
+    body.op-open { position: static; overflow: hidden; }
+  }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     TIER UP: ≥ 1024px (laptop)
+     ════════════════════════════════════════════════════════════════════════ */
+  @media (min-width: 1024px) {
+    .main { padding: 28px 32px; }
+    .firm-hl { font-size: 40px; }
+    .kpi-grid { grid-template-columns: repeat(5, 1fr) !important; }
+    .charts-grid { grid-template-columns: repeat(3, 1fr) !important; }
+    .team-grid { grid-template-columns: repeat(4, 1fr) !important; }
+    .f2-section-title { font-size: 28px; }
+    /* Modal grows back to its desktop width */
+    .op { max-width: 960px; }
+    .op-photo { height: 260px; }
+  }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     TIER UP: ≥ 1280px (desktop)
+     ════════════════════════════════════════════════════════════════════════ */
+  @media (min-width: 1280px) {
+    .main { max-width: 1400px; margin: 0 auto; padding: 28px 32px; }
+  }
 </style>
 <div id="sec-fund2" class="dr-sec">
   <div class="firm-eyebrow">Fund Brief — February 2026</div>
@@ -6610,6 +6859,28 @@ function renderMarketCharts() {
 // Trigger when market section becomes active
 
 
+// ── MOBILE NAV TOGGLE ────────────────────────────────────────────────────
+// Hamburger button shows at <768px (CSS handles visibility). Toggling
+// body.nav-open slides the drawer in and dims the backdrop.
+(function initMobileNav() {
+  const toggle = document.getElementById('navToggle');
+  const backdrop = document.getElementById('navBackdrop');
+  if (!toggle || !backdrop) return;
+  const setOpen = (open) => {
+    document.body.classList.toggle('nav-open', open);
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  };
+  toggle.addEventListener('click', () => setOpen(!document.body.classList.contains('nav-open')));
+  backdrop.addEventListener('click', () => setOpen(false));
+  // Close on nav-link tap so users see the section they picked
+  document.querySelectorAll('#topnav .nav-drop a').forEach(a => {
+    a.addEventListener('click', () => setOpen(false));
+  });
+  // Close on Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.body.classList.contains('nav-open')) setOpen(false);
+  });
+})();
 </script>
 
 <!-- DRILLDOWN MODAL -->
