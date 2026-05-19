@@ -143,6 +143,45 @@ select {
     font-weight: 600;
   }
 
+  /* ── STATUS SUB-TOGGLE ── */
+  /* Sub-toggle appears below the filter row when Open/Closed is selected. */
+  .sub-status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: opacity 0.22s ease, max-height 0.22s ease, margin 0.22s ease;
+  }
+  .sub-status-row.show {
+    opacity: 1;
+    max-height: 80px;
+    margin: -14px 0 22px 0;
+  }
+  .sub-status-row .sub-status-label {
+    font-size: 10px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-right: 4px;
+  }
+  .sub-status-row .pill { font-size: 10.5px; padding: 5px 11px; }
+  /* "Clear" reset link in the filter strip */
+  .filter-clear {
+    background: none;
+    border: none;
+    color: var(--dim);
+    font-size: 11px;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font-family: 'Manrope', sans-serif;
+    padding: 4px 8px;
+  }
+  .filter-clear:hover { color: #971BFF; }
+
   /* ── WORKOUT SCENARIOS ── */
   .wo-header { margin-bottom: 18px; }
   .wo-title {
@@ -2620,11 +2659,11 @@ body.tier-1 .tier-1-cta {
       <option value="Mixed Use">Mixed Use</option>
       <option value="Manufactured Housing">Manufactured Housing</option>
     </select>
-    <select id="filterStatus" onchange="applyFilters()">
-      <option value="all">All Statuses</option>
-      <option value="Open">Performing (Open)</option>
-      <option value="Closed">Closed / Realized</option>
-    </select>
+    <div class="pill-group" id="statusToggle" role="tablist" aria-label="Deal status filter">
+      <button type="button" class="pill active" data-status="all"    onclick="setStatusFilter('all')">All</button>
+      <button type="button" class="pill"        data-status="Open"   onclick="setStatusFilter('Open')">Open</button>
+      <button type="button" class="pill"        data-status="Closed" onclick="setStatusFilter('Closed')">Closed</button>
+    </div>
     <select id="filterType" onchange="applyFilters()">
       <option value="all">All Financing Types</option>
       <option value="Preferred Equity">Preferred Equity</option>
@@ -2639,12 +2678,31 @@ body.tier-1 .tier-1-cta {
       <option value="2025">2025</option>
       <option value="2026">2026</option>
     </select>
+    <button type="button" class="filter-clear" id="filterClear" onclick="clearFilters()">Clear</button>
     <div class="pill-group" style="margin-left:auto">
       <button class="pill active" onclick="setView('summary',this)">Summary</button>
       <button class="pill" onclick="setView('deals',this)">Deal Detail</button>
       <button class="pill" onclick="setView('payments',this)">Payment Analysis</button>
       <!-- HIDDEN: workout scenarios sub-tab — re-enable to bring back -->
       <!-- <button class="pill" onclick="setView('workouts',this)">Workout Scenarios</button> -->
+    </div>
+  </div>
+
+  <!-- STATUS SUB-TOGGLE (conditional on Open/Closed) -->
+  <div class="sub-status-row" id="subStatusRow" aria-live="polite">
+    <span class="sub-status-label" id="subStatusLabel">Open Sub-Status</span>
+    <div class="pill-group" id="subStatusOpen">
+      <button type="button" class="pill active" data-sub="all"        onclick="setSubStatus('all')">All Open</button>
+      <button type="button" class="pill"        data-sub="Current"    onclick="setSubStatus('Current')">Current (&lt;30 DPD)</button>
+      <button type="button" class="pill"        data-sub="Delinquent" onclick="setSubStatus('Delinquent')">Delinquent (30+ DPD)</button>
+      <button type="button" class="pill"        data-sub="Default"    onclick="setSubStatus('Default')">Default (90+ DPD)</button>
+    </div>
+    <div class="pill-group" id="subStatusClosed" style="display:none">
+      <button type="button" class="pill active" data-sub="all"                          onclick="setSubStatus('all')">All Closed</button>
+      <button type="button" class="pill"        data-sub="Paid in Full - Full Term"     onclick="setSubStatus('Paid in Full - Full Term')">Paid in Full · Full Term</button>
+      <button type="button" class="pill"        data-sub="Paid in Full - Buyback"       onclick="setSubStatus('Paid in Full - Buyback')">Paid in Full · Buyback</button>
+      <button type="button" class="pill"        data-sub="Workout / Negotiated Payoff" onclick="setSubStatus('Workout / Negotiated Payoff')">Workout</button>
+      <button type="button" class="pill"        data-sub="Charged Off (Loss)"           onclick="setSubStatus('Charged Off (Loss)')">Charged Off</button>
     </div>
   </div>
 
@@ -4843,10 +4901,75 @@ function metricFor(d, field) {
 // for Tier 1 — charts only aggregate by asset/vintage/type, no name-level
 // info, so the source-leak constraint doesn't apply to them.
 let filteredTape = [];
+
+// Hierarchical status filter state. Top-level is 'all' | 'Open' | 'Closed';
+// sub-status maps to dpd_bucket (when Open) or close_type (when Closed) on
+// the tape row — both fields come from get_pmt_data().
+let statusFilter = 'all';
+let subStatusFilter = 'all';
+
+// Tier 2 filters from RAW which doesn't carry dpd_bucket / close_type, so
+// look those values up on the tape side. Memoized; rebuilt if tape changes.
+let _tapeByIdCache = null, _tapeByIdRef = null;
+function tapeById(id) {
+  if (_tapeByIdRef !== PMT_DATA.tape) {
+    _tapeByIdCache = new Map((PMT_DATA.tape || []).map(t => [String(t.id), t]));
+    _tapeByIdRef = PMT_DATA.tape;
+  }
+  return _tapeByIdCache.get(String(id));
+}
+
+function setStatusFilter(s) {
+  // Switching top-level always resets the sub-filter — "Current" doesn't
+  // apply to Closed and vice versa.
+  if (s !== statusFilter) subStatusFilter = 'all';
+  statusFilter = s;
+  // Reflect top-level active state.
+  document.querySelectorAll('#statusToggle .pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.status === s);
+  });
+  // Show/hide the right sub-group (or both, when 'all').
+  const row = document.getElementById('subStatusRow');
+  const openG = document.getElementById('subStatusOpen');
+  const closedG = document.getElementById('subStatusClosed');
+  const label = document.getElementById('subStatusLabel');
+  if (s === 'all') {
+    row.classList.remove('show');
+  } else {
+    openG.style.display   = s === 'Open'   ? '' : 'none';
+    closedG.style.display = s === 'Closed' ? '' : 'none';
+    label.textContent     = s === 'Open'   ? 'Open Sub-Status' : 'Closed Sub-Status';
+    // Reset sub-pills' active state to "All <bucket>".
+    [openG, closedG].forEach(g => g.querySelectorAll('.pill').forEach(p => {
+      p.classList.toggle('active', p.dataset.sub === 'all');
+    }));
+    row.classList.add('show');
+  }
+  applyFilters();
+}
+
+function setSubStatus(s) {
+  subStatusFilter = s;
+  const group = statusFilter === 'Open'   ? document.getElementById('subStatusOpen')
+              : statusFilter === 'Closed' ? document.getElementById('subStatusClosed')
+              : null;
+  if (group) group.querySelectorAll('.pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.sub === s);
+  });
+  applyFilters();
+}
+
+function clearFilters() {
+  document.getElementById('filterFund').value    = 'all';
+  document.getElementById('filterAsset').value   = 'all';
+  document.getElementById('filterType').value    = 'all';
+  document.getElementById('filterVintage').value = 'all';
+  setStatusFilter('all'); // also calls applyFilters()
+}
+
 function applyFilters() {
   const fund = document.getElementById('filterFund').value;
   const asset = document.getElementById('filterAsset').value;
-  const status = document.getElementById('filterStatus').value;
   const type = document.getElementById('filterType').value;
   const vintage = document.getElementById('filterVintage').value;
 
@@ -4854,15 +4977,28 @@ function applyFilters() {
 
   const source = fund === 'fund2' ? RAW_PLUS_FUND2 : RAW;
 
+  // Returns true if the tape row for this id matches the active sub-status.
+  // When subStatusFilter === 'all', everything passes. When a specific bucket
+  // is selected and we have no tape row, exclude — we can't classify it.
+  const subMatch = (id, topStatus) => {
+    if (subStatusFilter === 'all') return true;
+    const t = tapeById(id);
+    if (!t) return false;
+    if (topStatus === 'Open')   return (t.dpd_bucket || null) === subStatusFilter;
+    if (topStatus === 'Closed') return (t.close_type || null) === subStatusFilter;
+    return true;
+  };
+
   filtered = source.filter(d => {
     if (d.id === 'LP-123') return false; // test account
     const fundMatch = fund === 'all' || FUND2.ids.has(d.id);
     const assetMatch = asset === 'all' || (d.asset && d.asset.includes(asset)) ||
       (asset === 'SFR' && d.asset === 'SFR');
-    const statusMatch = status === 'all' || d.status === status;
+    const statusMatch = statusFilter === 'all' || d.status === statusFilter;
     const typeMatch = type === 'all' || d.type === type;
     const vintageMatch = vintage === 'all' || d.vintage === parseInt(vintage);
-    return fundMatch && assetMatch && statusMatch && typeMatch && vintageMatch;
+    if (!(fundMatch && assetMatch && statusMatch && typeMatch && vintageMatch)) return false;
+    return subMatch(d.id, d.status);
   });
 
   filteredTape = (PMT_DATA.tape || []).filter(t => {
@@ -4870,10 +5006,14 @@ function applyFilters() {
     const at = t.asset_type || '';
     const assetMatch = asset === 'all' || at.includes(asset) ||
       (asset === 'SFR' && at === 'SFR');
-    const statusMatch = status === 'all' || t.status === status;
+    const statusMatch = statusFilter === 'all' || t.status === statusFilter;
     const typeMatch = type === 'all' || (t.fin_type || '') === type;
     const vintageMatch = vintage === 'all' || t.vintage === parseInt(vintage);
-    return assetMatch && statusMatch && typeMatch && vintageMatch;
+    if (!(assetMatch && statusMatch && typeMatch && vintageMatch)) return false;
+    if (subStatusFilter === 'all') return true;
+    if (t.status === 'Open')   return (t.dpd_bucket || null) === subStatusFilter;
+    if (t.status === 'Closed') return (t.close_type || null) === subStatusFilter;
+    return false;
   });
 
   currentPage = 1;
@@ -5251,8 +5391,8 @@ function renderTableTier1() {
     outstanding: t => t.opb || 0, projTotal: t => projTotalTape(t),
     irr: t => t.proj_irr || 0, ltv: t => t.ltv || 0,
     dscr: t => t.dscr || 0, status: t => t.status || '',
-    // 'name' is not selectable for Tier 1 (column hidden); fall back to id.
-    name: t => parseInt(t.id)||0,
+    // Sort the Position column alphabetically by the generated title.
+    name: t => buildTier1Title(t),
   };
   const sorted = [...filteredTape].sort((a,b) => {
     const va = sortFns[sortKey]?.(a) ?? 0, vb = sortFns[sortKey]?.(b) ?? 0;
@@ -5263,12 +5403,13 @@ function renderTableTier1() {
   const pages = Math.ceil(total/PER_PAGE);
   const slice = sorted.slice((currentPage-1)*PER_PAGE, currentPage*PER_PAGE);
 
-  // Rewrite the table header to drop the Borrower column for Tier 1.
+  // Rewrite the table header to swap Borrower for the anonymized Position column.
   const thead = document.querySelector('#dealTable thead');
   if (thead) {
     thead.innerHTML = `
       <tr>
         <th onclick="sortTable('id')">ID</th>
+        <th onclick="sortTable('name')">Position</th>
         <th onclick="sortTable('asset')">Asset Type</th>
         <th onclick="sortTable('type')">Structure</th>
         <th onclick="sortTable('vintage')">Vintage</th>
@@ -5291,6 +5432,7 @@ function renderTableTier1() {
     const isSel = selDeal && String(selDeal.id) === String(t.id);
     return `<tr data-id="${t.id}" onclick="openOP({id:'${t.id}'})" class="${isSel?'op-sel':''}">
       <td class="mono dim">${t.id}</td>
+      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${buildTier1Title(t)}</td>
       <td class="dim">${(at || '—').replace('& Hospitality','')}</td>
       <td><span class="type-badge ${typeClass}">${(ft || '—').replace(' Assignment','').replace('Preferred ','Pref ')}</span></td>
       <td class="mono">${t.vintage ?? '—'}</td>
@@ -5500,6 +5642,35 @@ function openOP(deal) {
   `;
 }
 
+// Location-based anonymized title for a Tier 1 tape row. Used wherever a
+// borrower name would normally appear on the Tier 1 path: modal header,
+// hero title, table column, payment-analysis dropdowns and drilldowns.
+// Tier 2 still uses t.name directly and never calls this.
+//   "Multifamily Property in Oxford, MS (49% LTV)"
+//   "Hotel in Philadelphia, PA"
+//   "Multifamily Property"                    ← no city/state
+//   "Position"                                ← unknown asset_type
+const TIER1_ASSET_LABELS = {
+  'Multifamily':          'Multifamily Property',
+  'SFR':                  'Single Family Rental',
+  'Hotels & Hospitality': 'Hotel',
+  'Mixed Use':            'Mixed Use Property',
+  'Retail':               'Retail Property',
+  'Multifamily;SFR':      'Multifamily & SFR Portfolio',
+  'Manufactured Housing': 'Manufactured Housing',
+  'Self-Storage':         'Self-Storage Facility',
+};
+function buildTier1Title(t) {
+  if (!t) return 'Position';
+  const label = TIER1_ASSET_LABELS[t.asset_type] || 'Position';
+  const loc = (t.city && t.state) ? ` in ${t.city}, ${t.state}` : '';
+  let metric = '';
+  if (t.ltv != null && t.ltv < 60)                 metric = ` (${t.ltv.toFixed(0)}% LTV)`;
+  else if (t.dscr != null && t.dscr >= 1.5)        metric = ` (${t.dscr.toFixed(2)}x DSCR)`;
+  else if (t.proj_irr != null && t.proj_irr >= 25) metric = ` (${t.proj_irr.toFixed(0)}% Target IRR)`;
+  return label + loc + metric;
+}
+
 // Tier 1 modal — driven entirely from PMT_DATA.tape (backend nulls name,
 // docsend_url, workout for Tier 1). `arg` is either a tape row or any object
 // with an `id` field; we always re-resolve from tape so deep-link calls that
@@ -5578,11 +5749,13 @@ function openOPTier1(arg) {
   const statusColor = t.status === 'Closed' ? '#8A9BB8' : '#1A9E6E';
   const statusLabel = t.status === 'Closed' ? 'Closed' : 'Performing';
 
+  const tier1Title = buildTier1Title(t);
+
   panel.innerHTML = `
     <div class="op-top">
       <div class="op-logo">nectar</div>
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:11px;color:#aaa;font-weight:600">— ID ${t.id}</span>
+        <span style="font-size:11px;color:#aaa;font-weight:600">— ${tier1Title}</span>
         <button class="op-x" onclick="closeOP()">✕</button>
       </div>
     </div>
@@ -5590,9 +5763,9 @@ function openOPTier1(arg) {
     <div class="op-photo">${photoHTML}</div>
 
     <div class="op-hb">
-      <div class="op-title">Position ${at.replace('& Hospitality','')}</div>
-      <div class="op-sub">Anonymized preview — request full access to view sponsor, location, and underwriting memo.</div>
-      <div class="op-meta">Funded ${fundDateStr} · ${termStr} term · <span style="color:${statusColor};font-weight:700">${statusLabel}</span></div>
+      <div class="op-title">${tier1Title}</div>
+      <div class="op-sub">Anonymized preview — request full access to view sponsor and underwriting memo.</div>
+      <div class="op-meta">ID ${t.id} · Funded ${fundDateStr} · ${termStr} term · <span style="color:${statusColor};font-weight:700">${statusLabel}</span></div>
     </div>
 
     <div class="op-mbar">
@@ -6280,14 +6453,20 @@ function paFilteredDeals(vintageOverride) {
     if (asset !== 'all' && !t.asset_type.includes(asset)) return false;
     if (vintages !== null && !vintages.includes(t.vintage)) return false;
     if (finType !== 'all' && t.financing_type !== finType) return false;
-    if (!PMT_DATA.dpd[t.id]) return false;
+    // Note: deals without PMT_DATA.dpd entries are included so the count
+    // aligns with Deal Detail. They contribute nothing to the DPD curves
+    // (computeChart1/2 already skip rows where dpdArr is missing).
     return true;
   });
 }
 
 function buildDealDropdowns() {
   const deals = PMT_DATA.tape.filter(t => PMT_DATA.dpd[t.id]).sort((a,b) => parseInt(a.id)-parseInt(b.id));
-  const opts = deals.map(t => `<option value="${t.id}">${t.id} — ${t.name}</option>`).join('');
+  const isTier1 = window.NC_TIER === 1;
+  const opts = deals.map(t => {
+    const display = isTier1 ? buildTier1Title(t) : t.name;
+    return `<option value="${t.id}">${t.id} — ${display}</option>`;
+  }).join('');
   const el2 = document.getElementById('paDetailDeal');
   if (el2) el2.innerHTML = '<option value="">Select an Asset ID…</option>' + opts;
 }
@@ -6679,10 +6858,11 @@ function showDrilldown(type, key, threshold, deals) {
     ? `Payment #${key} — ${threshold}+ DPD Deals (${delinDeals.length})`
     : `${key} — ${threshold}+ DPD Deals (${delinDeals.length})`;
 
+  const isTier1 = window.NC_TIER === 1;
   const rows = delinDeals.sort((a,b) => b.r.dpd - a.r.dpd).map(({t, r}) => `
     <tr style="border-bottom:1px solid rgba(1,4,29,0.08)">
       <td style="padding:7px 12px;font-family:'Manrope',monospace;font-size:10px;color:#971BFF">${t.id}</td>
-      <td style="padding:7px 12px;font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.name}</td>
+      <td style="padding:7px 12px;font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${isTier1 ? buildTier1Title(t) : t.name}</td>
       <td style="padding:7px 12px;font-size:10px;color:var(--dim)">${t.asset_type}</td>
       <td style="padding:7px 12px;font-size:10px;color:var(--dim)">${t.vintage}</td>
       <td style="padding:7px 12px;font-family:'Manrope',monospace;font-size:10px;text-align:right">${fmt(t.advance)}</td>
