@@ -1703,6 +1703,15 @@ body.tier-1 .tier-1-cta {
   .f2-disclosure p { margin:0 0 10px; }
   .f2-disclosure p:last-child { margin:0; }
 
+  /* Payment-history Status badge — color tiers match Walker's QuickBase buckets.
+     Used in the openOP modal preview and the Payment Analysis detail table. */
+  .dpd-bucket { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 9px; font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
+  .dpd-bucket.current  { background: rgba(46,204,113,0.14); color: #1A9E6E; }
+  .dpd-bucket.mild     { background: rgba(243,156,18,0.14); color: #D68910; }
+  .dpd-bucket.moderate { background: rgba(243,156,18,0.20); color: #B36A00; }
+  .dpd-bucket.severe   { background: rgba(231,76,60,0.16);  color: #C0392B; }
+  .dpd-bucket.critical { background: rgba(192,57,43,0.18);  color: #922B21; }
+
   /* ════════════════════════════════════════════════════════════════════════
      MOBILE-FIRST OVERRIDES
      Base rules below target mobile (320-479px). Each component then opts
@@ -3232,6 +3241,31 @@ function computeDPD(row, obsDate) {
     : obsDate;
   const days = Math.floor((ref - eom) / MS_PER_DAY);
   return Math.max(0, days);
+}
+
+// Walker's payment-history status buckets (May 19 audit call). Matches QuickBase
+// categorization. Sub-10-day "Current" tolerates ACH/processing delays.
+function statusBucket(dpd) {
+  if (!isFinite(dpd) || dpd < 10)  return { label: 'Current',           tier: 'current'  };
+  if (dpd <= 30)                   return { label: '10–30 days past due', tier: 'mild'    };
+  if (dpd <= 60)                   return { label: '31–60 days past due', tier: 'moderate'};
+  if (dpd <= 90)                   return { label: '61–90 days past due', tier: 'severe'  };
+  return                                   { label: '90+ days past due',  tier: 'critical'};
+}
+
+// Per-deal unit count for the modal's Investment Details grid. Graceful
+// fallback chain: PMT_DATA.tape (if Lilato's tape carries it) → FUND2_DEALS
+// (Fund II positions have it) → MEMO.numUnits (sparse) → null.
+function getUnitCount(dealId) {
+  const tapeRow = (PMT_DATA && PMT_DATA.tape) ? PMT_DATA.tape.find(t => String(t.id) === String(dealId)) : null;
+  if (tapeRow && tapeRow.units != null) return tapeRow.units;
+  if (typeof FUND2 !== 'undefined' && FUND2.byId && FUND2.byId[dealId] && FUND2.byId[dealId].units != null) {
+    return FUND2.byId[dealId].units;
+  }
+  if (typeof MEMO !== 'undefined' && MEMO[dealId] && MEMO[dealId].numUnits != null) {
+    return MEMO[dealId].numUnits;
+  }
+  return null;
 }
 
 // Portfolio observation date (UTC), matching the data cutoff baked into the tape.
@@ -5492,11 +5526,15 @@ function openOP(deal) {
   const statusColor = deal.status === 'Closed' ? '#8A9BB8' : isDQ ? '#E74C3C' : '#1A9E6E';
   const statusLabel = deal.status === 'Closed' ? 'Closed' : isDQ ? 'Watch' : 'Performing';
 
-  // Photo: runtime uploads take priority, then /images/ folder
-  // Every deal tries its photo: runtime uploads → PHOTO_MAP → default images/{id}.png
-  const photoSrc = DEAL_PHOTOS[deal.id] || PHOTO_MAP[deal.id] || `images/${deal.id}.png`;
-  const photoHTML = `<img src="${photoSrc}" style="width:100%;height:100%;object-fit:cover" alt="Property photo"
-       onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+  // Photo: runtime uploads → PHOTO_MAP → images/{id}.jpg → images/{id}.png → emoji.
+  // JPEG preferred for faster load (Walker May 19); PNG kept as fallback so
+  // deals without a JPEG yet still render.
+  const _override = DEAL_PHOTOS[deal.id] || PHOTO_MAP[deal.id];
+  const _jpgSrc   = `images/${deal.id}.jpg`;
+  const _pngSrc   = `images/${deal.id}.png`;
+  const photoSrc  = _override || _jpgSrc;
+  const photoHTML = `<img src="${photoSrc}" data-png-fallback="${_pngSrc}" style="width:100%;height:100%;object-fit:cover" alt="Property photo"
+       onerror="if(!this.dataset.didFallback && this.dataset.pngFallback){this.dataset.didFallback='1';this.src=this.dataset.pngFallback;}else{this.style.display='none';this.nextElementSibling.style.display='flex';}" />
      <div style="display:none;width:100%;height:100%;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#01041D,#3302F7);gap:6px">
        <span style="font-size:48px">${AICO[deal.asset]||'🏢'}</span>
        <span style="font-size:10px;color:rgba(255,255,255,0.5);font-family:'Manrope',monospace">${city} · ${deal.asset}</span>
@@ -5511,9 +5549,11 @@ function openOP(deal) {
   const mit2 = m.mitigant2 || 'Fully amortizing structure with Nectar as servicer';
 
   // Investment details
+  const _units = getUnitCount(deal.id);
   const details = [
     {l:'Contract Type', v:deal.type},
     {l:'Advance Amount', v:fmt(deal.advance)},
+    ..._units != null ? [{l:'Units', v:_units + (_units === 1 ? ' unit' : ' units')}] : [],
     {l:'Monthly Payment', v:fmt(deal.monthlyPmt)},
     {l:'Term', v:`${deal.term} months`},
     {l:'Use of Funds', v:m.useOfFunds||'Acquisitions and liquidity'},
@@ -5533,11 +5573,38 @@ function openOP(deal) {
       return eom && curEom && eom <= curEom;
     })
     .sort((a, b) => (a.pmt_num || 0) - (b.pmt_num || 0));
-  const last6 = visible.slice(-6).reverse().map(r => ({
-    month:  formatPaymentMonth(r.month_str),
-    amount: r.is_resolved ? Number(r.actual_amt || 0) : Number(r.sched_amt || 0),
-    paid:   !!r.is_resolved,
-  }));
+  // Post-term display: end of regular schedule is the highest pmt_num with
+  // sched_amt > 0. Keep all in-term rows; keep post-term rows ONLY when
+  // they carry an actual payment (those are recoveries). Drop post-term
+  // gap rows (sched=0, actual=0) so the table shows the schedule + any
+  // realized recoveries, nothing else. Walker's framing on May 19:
+  // "everything past pmt N is recovery, not regular schedule."
+  const _inTerm = visible.filter(r => Number(r.sched_amt) > 0).map(r => r.pmt_num || 0);
+  const lastInTermPmt = _inTerm.length ? Math.max(..._inTerm) : Infinity;
+  const filtered = visible.filter(r => {
+    const pn = r.pmt_num || 0;
+    if (pn <= lastInTermPmt) return true;
+    return Number(r.actual_amt) > 0;
+  });
+  // Pre-compute running cumulative (scheduled minus actual through that
+  // payment) across the FILTERED set, then slice the last 6 for the modal
+  // preview. The running balance only makes sense in chronological order.
+  let _cumSched = 0, _cumActual = 0;
+  const visibleWithBal = filtered.map(r => {
+    _cumSched  += Number(r.sched_amt)  || 0;
+    _cumActual += Number(r.actual_amt) || 0;
+    const pn = r.pmt_num || 0;
+    return {
+      pmt_num:    pn,
+      isPostTerm: pn > lastInTermPmt,
+      month:      formatPaymentMonth(r.month_str),
+      sched:      Number(r.sched_amt) || 0,
+      actual:     Number(r.actual_amt) || 0,
+      eomBal:     Math.max(0, _cumSched - _cumActual),
+      bucket:     statusBucket(computeDPD(r, OBS_DATE)),
+    };
+  });
+  const last6 = visibleWithBal.slice(-6).reverse();
   const hasMemo = !!memo;
 
   panel.innerHTML = `
@@ -5626,12 +5693,14 @@ function openOP(deal) {
       <div class="op-sec">
         <div class="op-st">Payment History <span style="font-size:8px;color:#aaa;font-weight:400;text-transform:none">(last 6 months)</span></div>
         <table class="op-pmt">
-          <thead><tr><th>Month</th><th>Amount</th><th>Status</th></tr></thead>
+          <thead><tr><th>Month</th><th style="text-align:right">Scheduled</th><th style="text-align:right">Actual</th><th style="text-align:right">EOM Delinq.</th><th>Status</th></tr></thead>
           <tbody>
-            ${last6.map(p => `<tr>
-              <td>${p.month}</td>
-              <td style="font-family:monospace">${fmt(p.amount)}</td>
-              <td><span class="${p.paid ? 'paid' : 'unpaid'}">${p.paid ? 'Paid' : 'Open'}</span></td>
+            ${last6.map(p => `<tr${p.isPostTerm ? ' style="background:rgba(255,200,100,0.06)"' : ''}>
+              <td>${p.month}${p.isPostTerm ? ' <span style="font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.08em">post-term</span>' : ''}</td>
+              <td style="font-family:monospace;text-align:right">${p.sched > 0 ? fmt(p.sched) : '—'}</td>
+              <td style="font-family:monospace;text-align:right;color:${p.actual >= p.sched * 0.99 && p.sched > 0 ? 'var(--green)' : p.actual > 0 ? 'var(--amber)' : 'var(--red)'}">${p.actual > 0 ? fmt(p.actual) : '—'}</td>
+              <td style="font-family:monospace;text-align:right;color:${p.eomBal > 0 ? 'var(--red)' : 'var(--green)'}">${p.eomBal > 0 ? fmt(p.eomBal) : '—'}</td>
+              <td><span class="dpd-bucket ${p.bucket.tier}">${p.bucket.label}</span></td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -5695,9 +5764,11 @@ function openOPTier1(arg) {
   document.body.classList.add('op-open');
 
   const at = t.asset_type || 'Real Estate';
-  const photoSrc = `images/${t.id}.png`;
-  const photoHTML = `<img src="${photoSrc}" style="width:100%;height:100%;object-fit:cover" alt="Property photo"
-       onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+  // JPEG preferred (faster load); PNG fallback for deals not yet converted.
+  const photoSrc = `images/${t.id}.jpg`;
+  const _pngFb   = `images/${t.id}.png`;
+  const photoHTML = `<img src="${photoSrc}" data-png-fallback="${_pngFb}" style="width:100%;height:100%;object-fit:cover" alt="Property photo"
+       onerror="if(!this.dataset.didFallback && this.dataset.pngFallback){this.dataset.didFallback='1';this.src=this.dataset.pngFallback;}else{this.style.display='none';this.nextElementSibling.style.display='flex';}" />
      <div style="display:none;width:100%;height:100%;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#01041D,#3302F7);gap:6px">
        <span style="font-size:48px">${(typeof AICO !== 'undefined' && AICO[at]) || '🏢'}</span>
        <span style="font-size:10px;color:rgba(255,255,255,0.5);font-family:'Manrope',monospace">${at}</span>
@@ -5736,9 +5807,11 @@ function openOPTier1(arg) {
   const termStr  = t.term_months ? t.term_months + ' months' : '—';
   const fundDateStr = t.fund_date || t.fundDate || '—';
 
+  const _tier1Units = getUnitCount(t.id);
   const details = [
     {l:'Contract Type', v: t.fin_type || '—'},
     {l:'Advance Amount', v: advanceStr},
+    ..._tier1Units != null ? [{l:'Units', v: _tier1Units + (_tier1Units === 1 ? ' unit' : ' units')}] : [],
     {l:'Term', v: termStr},
     {l:'Vintage', v: t.vintage ?? '—'},
     {l:'Protections', v:'PG, Right to Sell'},
@@ -6729,9 +6802,20 @@ function renderDealDetail(lid) {
   // Chart
   const chartId = 'chartDealDetail';
   const pastRows = dpdArr.filter(r => r.month_str && r.month_str <= OBS_MONTH_STR);
-  const chartLabels = pastRows.map(r => `${r.pmt_num}`);
-  const schedAmts   = pastRows.map(r => r.sched_amt);
-  const actualAmts  = pastRows.map(r => r.actual_amt);
+  // Post-term display: drop gap rows past the last scheduled payment that
+  // have no actual payment, but keep recovery rows. See openOP for the
+  // long-form rationale; same rule applies to chart and table here so they
+  // stay in sync (no phantom zero-bars for hidden months).
+  const _detailInTerm = pastRows.filter(r => Number(r.sched_amt) > 0).map(r => r.pmt_num || 0);
+  const lastInTermPmt = _detailInTerm.length ? Math.max(..._detailInTerm) : Infinity;
+  const displayRows = pastRows.filter(r => {
+    const pn = r.pmt_num || 0;
+    if (pn <= lastInTermPmt) return true;
+    return Number(r.actual_amt) > 0;
+  });
+  const chartLabels = displayRows.map(r => `${r.pmt_num}`);
+  const schedAmts   = displayRows.map(r => r.sched_amt);
+  const actualAmts  = displayRows.map(r => r.actual_amt);
 
   area.innerHTML = kpiHtml + `
     <div style="margin-bottom:16px">
@@ -6744,30 +6828,45 @@ function renderDealDetail(lid) {
           <th style="padding:7px 12px;text-align:left;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">Payment Month</th>
           <th style="padding:7px 12px;text-align:right;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">Scheduled</th>
           <th style="padding:7px 12px;text-align:right;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">Actual</th>
-          <th style="padding:7px 12px;text-align:right;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">Variance</th>
+          <th style="padding:7px 12px;text-align:right;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">End-of-Month Delinquent Balance</th>
           <th style="padding:7px 12px;text-align:right;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">Eff. DPD</th>
           <th style="padding:7px 12px;text-align:center;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">Status</th>
         </tr></thead>
         <tbody>
-          ${pastRows.map(r => {
-            const variance = r.actual_amt - r.sched_amt;
-            const dpdVal = computeDPD(r, OBS_DATE);
-            const dpd30 = dpdVal >= 30;
-            const dpd90 = dpdVal >= 90;
-            const eomR = endOfPaymentMonth(r.month_str);
-            const monthEnded = eomR && eomR < OBS_DATE;
-            const statusColor = dpd90 ? 'var(--red)' : dpd30 ? 'var(--amber)' : 'var(--green)';
-            const statusLabel = dpd90 ? '90+ DPD' : dpd30 ? '30+ DPD' : (r.actual_amt === 0 && monthEnded ? 'Missed' : '✓ On time');
-            return `<tr style="border-bottom:1px solid rgba(1,4,29,0.06)">
-              <td style="padding:7px 12px;font-family:'Manrope',monospace;color:var(--dim)">#${r.pmt_num}</td>
-              <td style="padding:7px 12px;font-family:'Manrope',monospace;font-size:10px">${formatPaymentMonth(r.month_str)}</td>
-              <td style="padding:7px 12px;text-align:right;font-family:'Manrope',monospace;font-size:10px">${fmt(r.sched_amt)}</td>
-              <td style="padding:7px 12px;text-align:right;font-family:'Manrope',monospace;font-size:10px;color:${r.actual_amt >= r.sched_amt * 0.99 ? 'var(--green)' : r.actual_amt > 0 ? 'var(--amber)' : 'var(--red)'}">${r.actual_amt > 0 ? fmt(r.actual_amt) : '—'}</td>
-              <td style="padding:7px 12px;text-align:right;font-family:'Manrope',monospace;font-size:10px;color:${variance >= -1 ? 'var(--green)' : 'var(--red)'}">${variance >= 0 ? '+' : ''}${fmt(variance)}</td>
-              <td style="padding:7px 12px;text-align:right;font-family:'Manrope',monospace;font-size:10px;color:${statusColor}">${dpdVal > 0 ? Math.round(dpdVal) + 'd' : '—'}</td>
-              <td style="padding:7px 12px;text-align:center"><span style="padding:2px 7px;border-radius:3px;font-size:9px;font-weight:600;background:${dpd90 ? 'rgba(231,76,60,0.15)' : dpd30 ? 'rgba(243,156,18,0.15)' : 'rgba(46,204,113,0.12)'};color:${statusColor}">${statusLabel}</span></td>
-            </tr>`;
-          }).join('')}
+          ${(() => {
+            // Running cumulative for the per-row "End-of-Month Delinquent
+            // Balance" column: sum of scheduled minus sum of actual through
+            // this payment. Per Walker (May 19): "the way that we can
+            // calculate days past due in a way that ... captures the heart
+            // of what we're trying to do pretty well."
+            let cumSched = 0, cumActual = 0;
+            return displayRows.map(r => {
+              cumSched += Number(r.sched_amt) || 0;
+              cumActual += Number(r.actual_amt) || 0;
+              const eomBal = Math.max(0, cumSched - cumActual);
+              const dpdVal = computeDPD(r, OBS_DATE);
+              const bucket = statusBucket(dpdVal);
+              const balColor = eomBal > 0 ? 'var(--red)' : 'var(--green)';
+              const dpdColor = dpdVal >= 90 ? 'var(--red)' : dpdVal >= 30 ? 'var(--amber)' : 'var(--dim)';
+              const isPostTerm = (r.pmt_num || 0) > lastInTermPmt;
+              const rowStyle = `border-bottom:1px solid rgba(1,4,29,0.06)${isPostTerm ? ';background:rgba(255,200,100,0.06)' : ''}`;
+              const pmtCell = isPostTerm
+                ? `<span style="color:var(--dim)">—</span> <span style="font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">post-term</span>`
+                : `#${r.pmt_num}`;
+              const schedCell = (Number(r.sched_amt) || 0) > 0 ? fmt(r.sched_amt) : '—';
+              const actualColor = (r.actual_amt >= r.sched_amt * 0.99 && r.sched_amt > 0)
+                ? 'var(--green)' : r.actual_amt > 0 ? 'var(--amber)' : 'var(--red)';
+              return `<tr style="${rowStyle}">
+                <td style="padding:7px 12px;font-family:'Manrope',monospace;color:var(--dim)">${pmtCell}</td>
+                <td style="padding:7px 12px;font-family:'Manrope',monospace;font-size:10px">${formatPaymentMonth(r.month_str)}</td>
+                <td style="padding:7px 12px;text-align:right;font-family:'Manrope',monospace;font-size:10px">${schedCell}</td>
+                <td style="padding:7px 12px;text-align:right;font-family:'Manrope',monospace;font-size:10px;color:${actualColor}">${r.actual_amt > 0 ? fmt(r.actual_amt) : '—'}</td>
+                <td style="padding:7px 12px;text-align:right;font-family:'Manrope',monospace;font-size:10px;color:${balColor}">${eomBal > 0 ? fmt(eomBal) : '—'}</td>
+                <td style="padding:7px 12px;text-align:right;font-family:'Manrope',monospace;font-size:10px;color:${dpdColor}">${dpdVal > 0 ? Math.round(dpdVal) + 'd' : '—'}</td>
+                <td style="padding:7px 12px;text-align:center"><span class="dpd-bucket ${bucket.tier}">${bucket.label}</span></td>
+              </tr>`;
+            }).join('');
+          })()}
         </tbody>
       </table>
     </div>`;
