@@ -5573,19 +5573,35 @@ function openOP(deal) {
       return eom && curEom && eom <= curEom;
     })
     .sort((a, b) => (a.pmt_num || 0) - (b.pmt_num || 0));
+  // Post-term display: end of regular schedule is the highest pmt_num with
+  // sched_amt > 0. Keep all in-term rows; keep post-term rows ONLY when
+  // they carry an actual payment (those are recoveries). Drop post-term
+  // gap rows (sched=0, actual=0) so the table shows the schedule + any
+  // realized recoveries, nothing else. Walker's framing on May 19:
+  // "everything past pmt N is recovery, not regular schedule."
+  const _inTerm = visible.filter(r => Number(r.sched_amt) > 0).map(r => r.pmt_num || 0);
+  const lastInTermPmt = _inTerm.length ? Math.max(..._inTerm) : Infinity;
+  const filtered = visible.filter(r => {
+    const pn = r.pmt_num || 0;
+    if (pn <= lastInTermPmt) return true;
+    return Number(r.actual_amt) > 0;
+  });
   // Pre-compute running cumulative (scheduled minus actual through that
-  // payment) across the FULL history, then slice the last 6 for the modal
+  // payment) across the FILTERED set, then slice the last 6 for the modal
   // preview. The running balance only makes sense in chronological order.
   let _cumSched = 0, _cumActual = 0;
-  const visibleWithBal = visible.map(r => {
+  const visibleWithBal = filtered.map(r => {
     _cumSched  += Number(r.sched_amt)  || 0;
     _cumActual += Number(r.actual_amt) || 0;
+    const pn = r.pmt_num || 0;
     return {
-      month:    formatPaymentMonth(r.month_str),
-      sched:    Number(r.sched_amt) || 0,
-      actual:   Number(r.actual_amt) || 0,
-      eomBal:   Math.max(0, _cumSched - _cumActual),
-      bucket:   statusBucket(computeDPD(r, OBS_DATE)),
+      pmt_num:    pn,
+      isPostTerm: pn > lastInTermPmt,
+      month:      formatPaymentMonth(r.month_str),
+      sched:      Number(r.sched_amt) || 0,
+      actual:     Number(r.actual_amt) || 0,
+      eomBal:     Math.max(0, _cumSched - _cumActual),
+      bucket:     statusBucket(computeDPD(r, OBS_DATE)),
     };
   });
   const last6 = visibleWithBal.slice(-6).reverse();
@@ -5679,10 +5695,10 @@ function openOP(deal) {
         <table class="op-pmt">
           <thead><tr><th>Month</th><th style="text-align:right">Scheduled</th><th style="text-align:right">Actual</th><th style="text-align:right">EOM Delinq.</th><th>Status</th></tr></thead>
           <tbody>
-            ${last6.map(p => `<tr>
-              <td>${p.month}</td>
-              <td style="font-family:monospace;text-align:right">${fmt(p.sched)}</td>
-              <td style="font-family:monospace;text-align:right;color:${p.actual >= p.sched * 0.99 ? 'var(--green)' : p.actual > 0 ? 'var(--amber)' : 'var(--red)'}">${p.actual > 0 ? fmt(p.actual) : '—'}</td>
+            ${last6.map(p => `<tr${p.isPostTerm ? ' style="background:rgba(255,200,100,0.06)"' : ''}>
+              <td>${p.month}${p.isPostTerm ? ' <span style="font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.08em">post-term</span>' : ''}</td>
+              <td style="font-family:monospace;text-align:right">${p.sched > 0 ? fmt(p.sched) : '—'}</td>
+              <td style="font-family:monospace;text-align:right;color:${p.actual >= p.sched * 0.99 && p.sched > 0 ? 'var(--green)' : p.actual > 0 ? 'var(--amber)' : 'var(--red)'}">${p.actual > 0 ? fmt(p.actual) : '—'}</td>
               <td style="font-family:monospace;text-align:right;color:${p.eomBal > 0 ? 'var(--red)' : 'var(--green)'}">${p.eomBal > 0 ? fmt(p.eomBal) : '—'}</td>
               <td><span class="dpd-bucket ${p.bucket.tier}">${p.bucket.label}</span></td>
             </tr>`).join('')}
@@ -6786,9 +6802,20 @@ function renderDealDetail(lid) {
   // Chart
   const chartId = 'chartDealDetail';
   const pastRows = dpdArr.filter(r => r.month_str && r.month_str <= OBS_MONTH_STR);
-  const chartLabels = pastRows.map(r => `${r.pmt_num}`);
-  const schedAmts   = pastRows.map(r => r.sched_amt);
-  const actualAmts  = pastRows.map(r => r.actual_amt);
+  // Post-term display: drop gap rows past the last scheduled payment that
+  // have no actual payment, but keep recovery rows. See openOP for the
+  // long-form rationale; same rule applies to chart and table here so they
+  // stay in sync (no phantom zero-bars for hidden months).
+  const _detailInTerm = pastRows.filter(r => Number(r.sched_amt) > 0).map(r => r.pmt_num || 0);
+  const lastInTermPmt = _detailInTerm.length ? Math.max(..._detailInTerm) : Infinity;
+  const displayRows = pastRows.filter(r => {
+    const pn = r.pmt_num || 0;
+    if (pn <= lastInTermPmt) return true;
+    return Number(r.actual_amt) > 0;
+  });
+  const chartLabels = displayRows.map(r => `${r.pmt_num}`);
+  const schedAmts   = displayRows.map(r => r.sched_amt);
+  const actualAmts  = displayRows.map(r => r.actual_amt);
 
   area.innerHTML = kpiHtml + `
     <div style="margin-bottom:16px">
@@ -6813,7 +6840,7 @@ function renderDealDetail(lid) {
             // calculate days past due in a way that ... captures the heart
             // of what we're trying to do pretty well."
             let cumSched = 0, cumActual = 0;
-            return pastRows.map(r => {
+            return displayRows.map(r => {
               cumSched += Number(r.sched_amt) || 0;
               cumActual += Number(r.actual_amt) || 0;
               const eomBal = Math.max(0, cumSched - cumActual);
@@ -6821,11 +6848,19 @@ function renderDealDetail(lid) {
               const bucket = statusBucket(dpdVal);
               const balColor = eomBal > 0 ? 'var(--red)' : 'var(--green)';
               const dpdColor = dpdVal >= 90 ? 'var(--red)' : dpdVal >= 30 ? 'var(--amber)' : 'var(--dim)';
-              return `<tr style="border-bottom:1px solid rgba(1,4,29,0.06)">
-                <td style="padding:7px 12px;font-family:'Manrope',monospace;color:var(--dim)">#${r.pmt_num}</td>
+              const isPostTerm = (r.pmt_num || 0) > lastInTermPmt;
+              const rowStyle = `border-bottom:1px solid rgba(1,4,29,0.06)${isPostTerm ? ';background:rgba(255,200,100,0.06)' : ''}`;
+              const pmtCell = isPostTerm
+                ? `<span style="color:var(--dim)">—</span> <span style="font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">post-term</span>`
+                : `#${r.pmt_num}`;
+              const schedCell = (Number(r.sched_amt) || 0) > 0 ? fmt(r.sched_amt) : '—';
+              const actualColor = (r.actual_amt >= r.sched_amt * 0.99 && r.sched_amt > 0)
+                ? 'var(--green)' : r.actual_amt > 0 ? 'var(--amber)' : 'var(--red)';
+              return `<tr style="${rowStyle}">
+                <td style="padding:7px 12px;font-family:'Manrope',monospace;color:var(--dim)">${pmtCell}</td>
                 <td style="padding:7px 12px;font-family:'Manrope',monospace;font-size:10px">${formatPaymentMonth(r.month_str)}</td>
-                <td style="padding:7px 12px;text-align:right;font-family:'Manrope',monospace;font-size:10px">${fmt(r.sched_amt)}</td>
-                <td style="padding:7px 12px;text-align:right;font-family:'Manrope',monospace;font-size:10px;color:${r.actual_amt >= r.sched_amt * 0.99 ? 'var(--green)' : r.actual_amt > 0 ? 'var(--amber)' : 'var(--red)'}">${r.actual_amt > 0 ? fmt(r.actual_amt) : '—'}</td>
+                <td style="padding:7px 12px;text-align:right;font-family:'Manrope',monospace;font-size:10px">${schedCell}</td>
+                <td style="padding:7px 12px;text-align:right;font-family:'Manrope',monospace;font-size:10px;color:${actualColor}">${r.actual_amt > 0 ? fmt(r.actual_amt) : '—'}</td>
                 <td style="padding:7px 12px;text-align:right;font-family:'Manrope',monospace;font-size:10px;color:${balColor}">${eomBal > 0 ? fmt(eomBal) : '—'}</td>
                 <td style="padding:7px 12px;text-align:right;font-family:'Manrope',monospace;font-size:10px;color:${dpdColor}">${dpdVal > 0 ? Math.round(dpdVal) + 'd' : '—'}</td>
                 <td style="padding:7px 12px;text-align:center"><span class="dpd-bucket ${bucket.tier}">${bucket.label}</span></td>
