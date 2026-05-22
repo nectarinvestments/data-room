@@ -1281,7 +1281,7 @@ body.tier-1 #sec-fit { display: none !important; }
 
 /* Track Record sub-views: scenario block hidden for Tier 1 (full-book
    Bear/Base/Bull is a Tier 2 analyst feature). Summary/Deal Detail/
-   Payment Analysis pills remain visible — same 3 as Tier 2 today. */
+   Payment History pills remain visible — same 3 as Tier 2 today. */
 body.tier-1 #viewSummaryScenario { display: none !important; }
 
 /* Fund II filter is a Tier 2 (full-access) feature — hide for Tier 1. */
@@ -1704,7 +1704,7 @@ body.tier-1 .tier-1-cta {
   .f2-disclosure p:last-child { margin:0; }
 
   /* Payment-history Status badge — color tiers match Walker's QuickBase buckets.
-     Used in the openOP modal preview and the Payment Analysis detail table. */
+     Used in the openOP modal preview and the Payment History detail table. */
   .dpd-bucket { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 9px; font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
   .dpd-bucket.current  { background: rgba(46,204,113,0.14); color: #1A9E6E; }
   .dpd-bucket.mild     { background: rgba(243,156,18,0.14); color: #D68910; }
@@ -2691,7 +2691,7 @@ body.tier-1 .tier-1-cta {
     <div class="pill-group" style="margin-left:auto">
       <button class="pill active" onclick="setView('summary',this)">Summary</button>
       <button class="pill" onclick="setView('deals',this)">Deal Detail</button>
-      <button class="pill" onclick="setView('payments',this)">Payment Analysis</button>
+      <button class="pill" onclick="setView('payments',this)">Payment History</button>
       <!-- HIDDEN: workout scenarios sub-tab — re-enable to bring back -->
       <!-- <button class="pill" onclick="setView('workouts',this)">Workout Scenarios</button> -->
     </div>
@@ -2904,73 +2904,11 @@ body.tier-1 .tier-1-cta {
     </div>
   </div>
 
-  <!-- CASH FLOW VIEW -->
+  <!-- PAYMENT HISTORY VIEW -->
   <div id="viewPayments" style="display:none">
-    <!-- FILTER BAR -->
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px;padding:14px 18px;background:white;border:1px solid var(--border-accent);border-radius:10px;box-shadow:0 1px 4px rgba(1,4,29,0.07);">
-      <span style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;">Filter</span>
-      <select id="paAsset" onchange="renderPaymentTab()" style="background:white;border:1px solid var(--border-accent);color:var(--text);padding:5px 22px 5px 9px;border-radius:5px;font-size:11px;font-family:'Manrope',sans-serif;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235A6A8A'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;">
-        <option value="all">All Asset Types</option>
-        <option value="Multifamily">Multifamily</option>
-        <option value="Hotels">Hotels &amp; Hospitality</option>
-        <option value="SFR">SFR</option>
-        <option value="Self-Storage">Self-Storage</option>
-        <option value="Mixed Use">Mixed Use</option>
-        <option value="Manufactured Housing">Manufactured Housing</option>
-      </select>
-      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:rgba(151,27,255,0.05);border:1px solid var(--border-accent);border-radius:5px;font-size:11px;font-family:'Manrope',sans-serif;">
-        <span style="color:var(--dim);font-size:10px;white-space:nowrap">Vintage:</span>
-        <label style="display:flex;align-items:center;gap:3px;cursor:pointer;color:var(--text)"><input type="checkbox" id="paVAll" checked onchange="paToggleAll(this)" style="accent-color:#971BFF"> All</label>
-        <span style="color:var(--border)">|</span>
-        <label style="display:flex;align-items:center;gap:3px;cursor:pointer;color:var(--dim)"><input type="checkbox" id="paV2022" value="2022" onchange="paVintageChange()" style="accent-color:#8A5E00"> 2022</label>
-        <label style="display:flex;align-items:center;gap:3px;cursor:pointer;color:var(--dim)"><input type="checkbox" id="paV2023" value="2023" onchange="paVintageChange()" style="accent-color:#7B5EA7"> 2023</label>
-        <label style="display:flex;align-items:center;gap:3px;cursor:pointer;color:var(--dim)"><input type="checkbox" id="paV2024" value="2024" onchange="paVintageChange()" style="accent-color:#2ECC71"> 2024</label>
-        <label style="display:flex;align-items:center;gap:3px;cursor:pointer;color:var(--dim)"><input type="checkbox" id="paV2025" value="2025" onchange="paVintageChange()" style="accent-color:#3498DB"> 2025</label>
-        <label style="display:flex;align-items:center;gap:3px;cursor:pointer;color:var(--dim)"><input type="checkbox" id="paV2026" value="2026" onchange="paVintageChange()" style="accent-color:#E74C3C"> 2026</label>
-      </div>
-      <select id="paFinType" onchange="renderPaymentTab()" style="background:white;border:1px solid var(--border-accent);color:var(--text);padding:5px 22px 5px 9px;border-radius:5px;font-size:11px;font-family:'Manrope',sans-serif;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235A6A8A'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;">
-        <option value="all">All Financing Types</option>
-        <option value="Preferred Equity">Preferred Equity</option>
-        <option value="Cash Flow Assignment">Cash Flow Assignment</option>
-        <option value="Revenue Assignment">Revenue Assignment</option>
-      </select>
-      <select id="paDelin" onchange="renderPaymentTab()" style="background:white;border:1px solid var(--border-accent);color:var(--text);padding:5px 22px 5px 9px;border-radius:5px;font-size:11px;font-family:'Manrope',sans-serif;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235A6A8A'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;">
-        <option value="both">30 DPD + 90 DPD</option>
-        <option value="30">30 DPD Only</option>
-        <option value="90">90 DPD Only</option>
-      </select>
-      
-      <span id="paCount" style="margin-left:auto;font-family:'Manrope',monospace;font-size:10px;color:var(--dim);background:rgba(151,27,255,0.08);padding:3px 8px;border-radius:4px"></span>
-    </div>
-
-    <!-- CHART 1: by Payment Number -->
-    <div class="chart-card"  style="margin-bottom:16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div class="ct" style="margin:0">Delinquency Curve — By Payment Number</div>
-        <div style="font-size:10px;color:var(--dim);font-family:'Manrope',monospace">Sum of Delinquent OPB / Sum of Advance Amounts</div>
-      </div>
-      <canvas id="chartDPD1" height="200"></canvas>
-      <div style="margin-top:10px;font-size:10px;color:var(--dim);line-height:1.6">
-        <strong style="color:var(--text)">Chart 1 methodology:</strong> For each payment number, delinquent positions are those with effective DPD ≥ threshold at that payment number. Charged-off deals are excluded after charge-off. Partial payments use the formula: days late × (1 − % received). Formula: Σ(Delinquent Outstanding Principal Balance) / Σ(Advance Amounts).
-      </div>
-    </div>
-
-    <!-- CHART 2: by Calendar Month -->
-    <div class="chart-card"  style="margin-bottom:16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div class="ct" style="margin:0">Delinquency Curve — By Calendar Month</div>
-        <div style="font-size:10px;color:var(--dim);font-family:'Manrope',monospace">Sum of Delinquent OPB / Sum of Outstanding Principal</div>
-      </div>
-      <canvas id="chartDPD2" height="200"></canvas>
-      <div style="margin-top:10px;font-size:10px;color:var(--dim);line-height:1.6">
-        <strong style="color:var(--text)">Chart 2 methodology:</strong> DPD measured point-in-time — a payment missed in a given month accumulates DPD from that due date. Formula: Σ(Delinquent Outstanding Principal Balance) / Σ(Outstanding Principal Balance).
-      </div>
-    </div>
-
-    <!-- DEAL DETAIL: Actual vs Scheduled -->
-    <div class="chart-card" >
+    <div class="chart-card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <div class="ct" style="margin:0">Deal Payment Detail — Actual vs Scheduled</div>
+        <div class="ct" style="margin:0">Payment History</div>
         <select id="paDetailDeal" onchange="renderDealDetail(this.value)" style="background:white;border:1px solid var(--border-accent);color:var(--text);padding:5px 22px 5px 9px;border-radius:5px;font-size:11px;font-family:'Manrope',sans-serif;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235A6A8A'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;min-width:260px">
           <option value="">Select an Asset ID...</option>
         </select>
@@ -6492,47 +6430,6 @@ function paDestroyChart(id) {
   if (paCharts[id]) { paCharts[id].destroy(); delete paCharts[id]; }
 }
 
-function paToggleAll(el) {
-  const years = [2022,2023,2024,2025,2026];
-  years.forEach(y => {
-    const cb = document.getElementById('paV'+y);
-    if (cb) cb.checked = false;
-  });
-  renderPaymentTab();
-}
-
-function paVintageChange() {
-  const allCb = document.getElementById('paVAll');
-  if (allCb) allCb.checked = false;
-  renderPaymentTab();
-}
-
-function paSelectedVintages() {
-  const allCb = document.getElementById('paVAll');
-  if (allCb && allCb.checked) return null; // All selected
-  const years = [2022,2023,2024,2025,2026];
-  const checked = years.filter(y => {
-    const el = document.getElementById('paV' + y);
-    return el && el.checked;
-  });
-  return checked.length === 0 ? null : checked;
-}
-
-function paFilteredDeals(vintageOverride) {
-  const asset    = document.getElementById('paAsset')?.value || 'all';
-  const finType  = document.getElementById('paFinType')?.value || 'all';
-  const vintages = vintageOverride !== undefined ? vintageOverride : paSelectedVintages();
-  return PMT_DATA.tape.filter(t => {
-    if (asset !== 'all' && !t.asset_type.includes(asset)) return false;
-    if (vintages !== null && !vintages.includes(t.vintage)) return false;
-    if (finType !== 'all' && t.financing_type !== finType) return false;
-    // Note: deals without PMT_DATA.dpd entries are included so the count
-    // aligns with Deal Detail. They contribute nothing to the DPD curves
-    // (computeChart1/2 already skip rows where dpdArr is missing).
-    return true;
-  });
-}
-
 function buildDealDropdowns() {
   const deals = PMT_DATA.tape.filter(t => PMT_DATA.dpd[t.id]).sort((a,b) => parseInt(a.id)-parseInt(b.id));
   const isTier1 = window.NC_TIER === 1;
@@ -6544,96 +6441,8 @@ function buildDealDropdowns() {
   if (el2) el2.innerHTML = '<option value="">Select an Asset ID…</option>' + opts;
 }
 
-function c1Is30dpd(r) {
-  return computeDPD(r, OBS_DATE) >= 30;
-}
-function c1Is90dpd(r) {
-  return computeDPD(r, OBS_DATE) >= 90;
-}
-
-function computeChart1(deals, delinFilter) {
-  const MAX_PMT = 48;
-  const dpd30 = [], dpd90 = [];
-  for (let pn = 1; pn <= MAX_PMT; pn++) {
-    let delin30 = 0, delin90 = 0, totalAdv = 0;
-    for (const t of deals) {
-      const dpdArr = PMT_DATA.dpd[t.id];
-      if (!dpdArr) continue;
-      const r = dpdArr.find(x => x.pmt_num === pn);
-      if (!r) continue;
-      totalAdv += t.advance;
-      if (c1Is30dpd(r)) delin30 += t.advance;
-      if (c1Is90dpd(r)) delin90 += t.advance;
-    }
-    dpd30.push(totalAdv > 0 ? +(delin30/totalAdv*100).toFixed(2) : 0);
-    dpd90.push(totalAdv > 0 ? +(delin90/totalAdv*100).toFixed(2) : 0);
-  }
-  return { labels: Array.from({length: MAX_PMT}, (_,i) => `Pmt ${i+1}`), dpd30, dpd90 };
-}
-
-
-function pitDpd(rec, obsYear, obsMonth) {
-  // Point-in-time DPD at end of obsYear-obsMonth, anchored on end of payment month.
-  if (!rec.month_str) return 0;
-  const obsMonthStr = `${obsYear}-${String(obsMonth).padStart(2, "0")}`;
-  // Payment month is after the observation month — not yet due.
-  if (rec.month_str > obsMonthStr) return 0;
-  const eom    = endOfPaymentMonth(rec.month_str);
-  const obsEnd = new Date(Date.UTC(obsYear, obsMonth, 0));
-  // Only credit a resolution that happened on or before obsEnd; later resolutions
-  // are in the future relative to the observation window.
-  const resolvedInWindow = rec.is_resolved && rec.resolved_date && new Date(rec.resolved_date) <= obsEnd;
-  const ref = resolvedInWindow ? new Date(rec.resolved_date) : obsEnd;
-  return Math.max(0, Math.floor((ref - eom) / MS_PER_DAY));
-}
-
-function computeChart2(deals, delinFilter) {
-  // Build all months from Oct 2021 through Mar 2026 (last complete month)
-  const months = [];
-  let d = new Date(2021, 9, 1); // Oct 2021
-  const end = new Date(2026, 2, 28); // Exclude current incomplete month (April)
-  while (d <= end) {
-    months.push([d.getFullYear(), d.getMonth() + 1]);
-    d = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-  }
-
-  const dpd30 = [], dpd90 = [], labels = [];
-  for (const [yr, mo] of months) {
-    const moStr  = `${yr}-${String(mo).padStart(2,'0')}`;
-
-    let delin30 = 0, delin90 = 0, totalOPB = 0;
-    for (const t of deals) {
-      const dpdArr = PMT_DATA.dpd[t.id];
-      if (!dpdArr) continue;
-      // Find worst DPD across all payment records whose payment month ≤ observation month
-      let worstDpd = 0;
-      let hasPayment = false;
-      for (const r of dpdArr) {
-        if (!r.month_str) continue;
-        if (r.month_str > moStr) break;
-        hasPayment = true;
-        const dpd = pitDpd(r, yr, mo);
-        if (dpd > worstDpd) worstDpd = dpd;
-      }
-      if (!hasPayment) continue;
-      // Use PIT OPB: advance minus principal collected through obs month
-      const pitOpb = t.pit_opb ? t.pit_opb[moStr] : null;
-      if (pitOpb === null || pitOpb === undefined) continue; // not active this month
-      if (pitOpb === 0) continue;
-      totalOPB += pitOpb;
-      if (worstDpd >= 30) delin30 += pitOpb;
-      if (worstDpd >= 90) delin90 += pitOpb;
-    }
-    if (totalOPB > 0) {
-      labels.push(moStr);
-      dpd30.push(+(delin30/totalOPB*100).toFixed(2));
-      dpd90.push(+(delin90/totalOPB*100).toFixed(2));
-    }
-  }
-  return { labels, dpd30, dpd90 };
-}
-
-const PA_CHART_DEFAULTS = {
+// Shared Chart.js styling for the Payment History deal-detail chart.
+const PAYMENT_CHART_DEFAULTS = {
   responsive: true,
   animation: false,
   plugins: {
@@ -6645,106 +6454,6 @@ const PA_CHART_DEFAULTS = {
     y: { grid: { color: 'rgba(1,4,29,0.08)' }, ticks: { color: '#3A4B6A', font: { size: 9 }, callback: v => v + '%' } }
   }
 };
-
-function renderPaymentTab() {
-  const deals = paFilteredDeals();
-  const delinFilter = document.getElementById('paDelin')?.value || 'both';
-  const countEl = document.getElementById('paCount');
-  if (countEl) countEl.textContent = `${deals.length} deals`;
-
-  // ── Chart 1: by payment number (one line per checked vintage) ───────────
-  const VINTAGE_COLORS = {
-    2022: { line:'#C9A84C', bg:'rgba(201,168,76,0.10)' },
-    2023: { line:'#7B5EA7', bg:'rgba(123,94,167,0.10)' },
-    2024: { line:'#2ECC71', bg:'rgba(46,204,113,0.08)' },
-    2025: { line:'#3498DB', bg:'rgba(52,152,219,0.08)' },
-    2026: { line:'#E74C3C', bg:'rgba(231,76,60,0.08)'  },
-    all:  { '30':{ line:'#F39C12', bg:'rgba(243,156,18,0.12)' },
-            '90':{ line:'#E74C3C', bg:'rgba(231,76,60,0.10)'  } }
-  };
-
-  const selectedVintages = paSelectedVintages(); // null = all
-  const vintageList = selectedVintages || [2022,2023,2024,2025,2026];
-  const multiVintage = selectedVintages !== null && selectedVintages.length > 0;
-
-  paDestroyChart('chartDPD1');
-  const datasets1 = [];
-  // Store c1 data per vintage for drilldown
-  const c1ByVintage = {};
-
-  if (!multiVintage) {
-    // No vintages checked — show all deals, 30+/90+ as two lines
-    const c1 = computeChart1(deals, delinFilter);
-    c1ByVintage['all'] = c1;
-    if (delinFilter !== '90') datasets1.push({ label: '30+ DPD (All)', data: c1.dpd30, borderColor: VINTAGE_COLORS.all['30'].line, backgroundColor: VINTAGE_COLORS.all['30'].bg, fill: false, tension: 0.3, pointRadius: 3, pointHoverRadius: 7, borderWidth: 2, _threshold: 30, _vintage: null });
-    if (delinFilter !== '30') datasets1.push({ label: '90+ DPD (All)', data: c1.dpd90, borderColor: VINTAGE_COLORS.all['90'].line, backgroundColor: VINTAGE_COLORS.all['90'].bg, fill: false, tension: 0.3, pointRadius: 3, pointHoverRadius: 7, borderWidth: 2, _threshold: 90, _vintage: null });
-  } else {
-    // One or more vintages checked — one line per vintage per threshold
-    for (const vy of vintageList) {
-      if (![2022,2023,2024,2025,2026].includes(vy)) continue;
-      const vc = VINTAGE_COLORS[vy] || { line: '#aaa', bg: 'rgba(170,170,170,0.08)' };
-      const vDeals = paFilteredDeals([vy]);
-      if (!vDeals.length) continue;
-      const c1v = computeChart1(vDeals, delinFilter);
-      c1ByVintage[vy] = c1v;
-      if (delinFilter !== '90') datasets1.push({ label: `${vy} 30+ DPD`, data: c1v.dpd30, borderColor: vc.line, backgroundColor: vc.bg, fill: false, tension: 0.3, pointRadius: 3, pointHoverRadius: 7, borderWidth: 2, borderDash: [], _threshold: 30, _vintage: vy });
-      if (delinFilter !== '30') datasets1.push({ label: `${vy} 90+ DPD`, data: c1v.dpd90, borderColor: vc.line, backgroundColor: vc.bg, fill: false, tension: 0.3, pointRadius: 3, pointHoverRadius: 7, borderWidth: 2, borderDash: [4,3], _threshold: 90, _vintage: vy });
-    }
-  }
-
-  paCharts['chartDPD1'] = new Chart(document.getElementById('chartDPD1'), {
-    type: 'line',
-    data: { labels: Array.from({length: 48}, (_,i) => String(i+1)), datasets: datasets1 },
-    options: {
-      ...PA_CHART_DEFAULTS,
-      onClick: (evt, elements) => {
-        if (!elements.length) return;
-        const pmtNum = elements[0].index + 1;
-        const ds = datasets1[elements[0].datasetIndex];
-        const threshold = ds._threshold || 30;
-        const vDrillDeals = ds._vintage ? paFilteredDeals([ds._vintage]) : deals;
-        showDrilldown('pmt', pmtNum, threshold, vDrillDeals);
-      },
-      plugins: {
-        ...PA_CHART_DEFAULTS.plugins,
-        legend: { display: true, labels: { color: '#8A9BB8', font: { size: 9 }, boxWidth: 12,
-          filter: item => datasets1.length > 0 } }
-      },
-      scales: {
-        x: {
-          grid: { color: 'rgba(1,4,29,0.06)' },
-          title: { display: true, text: 'Payment Number', color: '#3A4B6A', font: { size: 10 } },
-          ticks: { color: '#8A9BB8', font: { size: 9 }, maxRotation: 0, callback: (val, idx) => idx + 1 }
-        },
-        y: { ...PA_CHART_DEFAULTS.scales.y }
-      }
-    }
-  });
-
-  // ── Chart 2: by calendar month (combined — vintage overlay not applicable) ──
-  const c2 = computeChart2(deals, delinFilter);
-  paDestroyChart('chartDPD2');
-  const datasets2 = [];
-  if (delinFilter !== '90') datasets2.push({ label: '30+ DPD', data: c2.dpd30, borderColor: '#5DE7DC', backgroundColor: 'rgba(93,231,220,0.10)', fill: true, tension: 0.3, pointRadius: 3, pointHoverRadius: 7, borderWidth: 2 });
-  if (delinFilter !== '30') datasets2.push({ label: '90+ DPD', data: c2.dpd90, borderColor: '#E74C3C', backgroundColor: 'rgba(231,76,60,0.08)', fill: true, tension: 0.3, pointRadius: 3, pointHoverRadius: 7, borderWidth: 2 });
-  paCharts['chartDPD2'] = new Chart(document.getElementById('chartDPD2'), {
-    type: 'line',
-    data: { labels: c2.labels, datasets: datasets2 },
-    options: {
-      ...PA_CHART_DEFAULTS,
-      onClick: (evt, elements) => {
-        if (!elements.length) return;
-        const mo = c2.labels[elements[0].index];
-        const threshold = elements[0].datasetIndex === 0 && delinFilter !== '90' ? 30 : 90;
-        showDrilldown('month', mo, threshold, deals);
-      },
-      scales: {
-        x: { ...PA_CHART_DEFAULTS.scales.x, ticks: { ...PA_CHART_DEFAULTS.scales.x.ticks, maxTicksLimit: 20 } },
-        y: { ...PA_CHART_DEFAULTS.scales.y }
-      }
-    }
-  });
-}
 
 function renderDealDetail(lid) {
   const area = document.getElementById('dealDetailArea');
@@ -6884,105 +6593,33 @@ function renderDealDetail(lid) {
         ]
       },
       options: {
-        ...PA_CHART_DEFAULTS,
+        ...PAYMENT_CHART_DEFAULTS,
         plugins: {
-          ...PA_CHART_DEFAULTS.plugins,
+          ...PAYMENT_CHART_DEFAULTS.plugins,
           tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: $${ctx.raw.toLocaleString('en-US')}` } }
         },
         scales: {
           x: {
-            ...PA_CHART_DEFAULTS.scales.x,
+            ...PAYMENT_CHART_DEFAULTS.scales.x,
             title: { display: true, text: 'Payment Number', color: '#5A6A8A', font: { size: 10 } },
-            ticks: { ...PA_CHART_DEFAULTS.scales.x.ticks, maxTicksLimit: 24 }
+            ticks: { ...PAYMENT_CHART_DEFAULTS.scales.x.ticks, maxTicksLimit: 24 }
           },
-          y: { ...PA_CHART_DEFAULTS.scales.y, ticks: { ...PA_CHART_DEFAULTS.scales.y.ticks, callback: v => '$' + (v/1000).toFixed(0) + 'K' } }
+          y: { ...PAYMENT_CHART_DEFAULTS.scales.y, ticks: { ...PAYMENT_CHART_DEFAULTS.scales.y.ticks, callback: v => '$' + (v/1000).toFixed(0) + 'K' } }
         }
       }
     });
   }, 50);
 }
 
-// Init payment tab on first open
+// Init payment tab on first open — just populates the deal selector;
+// renderDealDetail is invoked on the user's first selection from the dropdown.
 let paInitialized = false;
 function initPaymentTab() {
   if (paInitialized) return;
   paInitialized = true;
   buildDealDropdowns();
-  renderPaymentTab();
 }
 
-
-// ═══════ DRILLDOWN MODAL ═══════
-function showDrilldown(type, key, threshold, deals) {
-  // Find delinquent deals for this data point
-  let delinDeals = [];
-
-  if (type === 'pmt') {
-    // key = payment number (int)
-    for (const t of deals) {
-      const dpdArr = PMT_DATA.dpd[t.id];
-      if (!dpdArr) continue;
-      const r = dpdArr.find(x => x.pmt_num === key);
-      if (!r) continue;
-      const dpdVal = computeDPD(r, OBS_DATE);
-      if (dpdVal < threshold) continue;
-      delinDeals.push({ t, r: {...r, dpd: dpdVal}, label: `Pmt #${key}` });
-    }
-  } else {
-    // type === 'month', key = 'YYYY-MM'
-    const [drillYr, drillMo] = key.split('-').map(Number);
-    const moStr = key;
-    for (const t of deals) {
-      // Gate: deal must be active this month (pit_opb non-null and > 0)
-      const pitOpb = t.pit_opb ? t.pit_opb[moStr] : null;
-      if (pitOpb === null || pitOpb === undefined || pitOpb === 0) continue;
-      const dpdArr = PMT_DATA.dpd[t.id];
-      if (!dpdArr) continue;
-      // Find worst payment for this deal at this observation month
-      let worstDpd = 0; let worstR = null;
-      for (const r of dpdArr) {
-        if (!r.month_str) continue;
-        if (r.month_str > moStr) break;
-        const dpd = pitDpd(r, drillYr, drillMo);
-        if (dpd > worstDpd) { worstDpd = dpd; worstR = r; }
-      }
-      if (!worstR || worstDpd < threshold) continue;
-      // Synthesize a display record with the PIT dpd
-      delinDeals.push({ t, r: {...worstR, dpd: worstDpd}, label: key });
-    }
-  }
-
-  const fmt = v => '$' + (v||0).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0});
-  const title = type === 'pmt'
-    ? `Payment #${key} — ${threshold}+ DPD Deals (${delinDeals.length})`
-    : `${key} — ${threshold}+ DPD Deals (${delinDeals.length})`;
-
-  const isTier1 = window.NC_TIER === 1;
-  const rows = delinDeals.sort((a,b) => b.r.dpd - a.r.dpd).map(({t, r}) => `
-    <tr style="border-bottom:1px solid rgba(1,4,29,0.08)">
-      <td style="padding:7px 12px;font-family:'Manrope',monospace;font-size:10px;color:#971BFF">${t.id}</td>
-      <td style="padding:7px 12px;font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${isTier1 ? buildTier1Title(t) : t.name}</td>
-      <td style="padding:7px 12px;font-size:10px;color:var(--dim)">${t.asset_type}</td>
-      <td style="padding:7px 12px;font-size:10px;color:var(--dim)">${t.vintage}</td>
-      <td style="padding:7px 12px;font-family:'Manrope',monospace;font-size:10px;text-align:right">${fmt(t.advance)}</td>
-      <td style="padding:7px 12px;font-family:'Manrope',monospace;font-size:10px;text-align:right">${fmt(r.sched_amt)}</td>
-      <td style="padding:7px 12px;font-family:'Manrope',monospace;font-size:10px;text-align:right;color:${r.actual_amt>0?'var(--amber)':'var(--red)'}">${r.actual_amt > 0 ? fmt(r.actual_amt) : '—'}</td>
-      <td style="padding:7px 12px;font-family:'Manrope',monospace;font-size:10px;text-align:right;color:${r.dpd>=90?'var(--red)':'var(--amber)'}">${Math.round(r.dpd)}d</td>
-      <td style="padding:7px 12px;font-size:10px">
-        <span style="padding:2px 7px;border-radius:3px;font-size:9px;font-weight:600;background:${r.dpd>=90?'rgba(231,76,60,0.15)':'rgba(243,156,18,0.15)'};color:${r.dpd>=90?'var(--red)':'var(--amber)'}">${r.dpd>=90?'90+ DPD':'30+ DPD'}</span>
-      </td>
-    </tr>`).join('');
-
-  const modal = document.getElementById('paDrillModal');
-  document.getElementById('paDrillTitle').textContent = title;
-  document.getElementById('paDrillBody').innerHTML = delinDeals.length ? rows
-    : '<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--dim)">No delinquent deals at this data point.</td></tr>';
-  modal.style.display = 'flex';
-}
-
-function closeDrilldown() {
-  document.getElementById('paDrillModal').style.display = 'none';
-}
 
 
 // ═══════ MARKET DYNAMICS CHARTS ═══════
@@ -7161,34 +6798,6 @@ function renderMarketCharts() {
   });
 })();
 </script>
-
-<!-- DRILLDOWN MODAL -->
-<div id="paDrillModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;align-items:center;justify-content:center;padding:20px">
-  <div style="background:#FFFFFF;border:1px solid rgba(151,27,255,0.18);border-radius:12px;max-width:900px;width:100%;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 48px rgba(1,4,29,0.18)">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)">
-      <div id="paDrillTitle" style="font-family:'Manrope',serif;font-size:18px;color:#01041D"></div>
-      <button onclick="closeDrilldown()" style="background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer;line-height:1;padding:0 4px">&times;</button>
-    </div>
-    <div style="overflow-y:auto;flex:1">
-      <table style="width:100%;border-collapse:collapse">
-        <thead>
-          <tr style="border-bottom:1px solid rgba(1,4,29,0.10)">
-            <th style="padding:8px 12px;text-align:left;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">Asset ID</th>
-            <th style="padding:8px 12px;text-align:left;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">Borrower</th>
-            <th style="padding:8px 12px;text-align:left;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">Asset Type</th>
-            <th style="padding:8px 12px;text-align:left;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">Vintage</th>
-            <th style="padding:8px 12px;text-align:right;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">Advance</th>
-            <th style="padding:8px 12px;text-align:right;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">Scheduled</th>
-            <th style="padding:8px 12px;text-align:right;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">Actual</th>
-            <th style="padding:8px 12px;text-align:right;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">DPD</th>
-            <th style="padding:8px 12px;text-align:left;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">Status</th>
-          </tr>
-        </thead>
-        <tbody id="paDrillBody"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
 
 <!-- ONE-PAGER MODAL (rendered above any view) -->
 <div id="opBackdrop" class="op-backdrop" style="display:none" onclick="closeOP()"></div>
