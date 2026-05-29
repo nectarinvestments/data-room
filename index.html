@@ -5638,7 +5638,7 @@ function openOP(deal) {
               <td style="font-family:monospace;text-align:right">${p.sched > 0 ? fmt(p.sched) : '—'}</td>
               <td style="font-family:monospace;text-align:right;color:${p.actual >= p.sched * 0.99 && p.sched > 0 ? 'var(--green)' : p.actual > 0 ? 'var(--amber)' : 'var(--red)'}">${p.actual > 0 ? fmt(p.actual) : '—'}</td>
               <td style="font-family:monospace;text-align:right;color:${p.eomBal > 0 ? 'var(--red)' : 'var(--green)'}">${p.eomBal > 0 ? fmt(p.eomBal) : '—'}</td>
-              <td><span class="dpd-bucket ${p.bucket.tier}">${p.bucket.label}</span></td>
+              <td>${p.isPostTerm ? '<span style="color:var(--dim)">-</span>' : `<span class="dpd-bucket ${p.bucket.tier}">${p.bucket.label}</span>`}</td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -6572,7 +6572,7 @@ function renderDealDetail(lid) {
                 <td style="padding:7px 12px;text-align:right;font-family:'Manrope',monospace;font-size:10px;color:${actualColor}">${r.actual_amt > 0 ? fmt(r.actual_amt) : '—'}</td>
                 <td style="padding:7px 12px;text-align:right;font-family:'Manrope',monospace;font-size:10px;color:${balColor}">${eomBal > 0 ? fmt(eomBal) : '—'}</td>
                 <td style="padding:7px 12px;text-align:right;font-family:'Manrope',monospace;font-size:10px;color:${dpdColor}">${dpdVal > 0 ? Math.round(dpdVal) + 'd' : '—'}</td>
-                <td style="padding:7px 12px;text-align:center"><span class="dpd-bucket ${bucket.tier}">${bucket.label}</span></td>
+                <td style="padding:7px 12px;text-align:center">${isPostTerm ? '<span style="color:var(--dim)">-</span>' : `<span class="dpd-bucket ${bucket.tier}">${bucket.label}</span>`}</td>
               </tr>`;
             }).join('');
           })()}
