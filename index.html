@@ -1144,118 +1144,13 @@ tbody tr { cursor: pointer; }
   to { transform: rotate(360deg); }
 }
 
-/* ── Auth overlays (login + unauthorized) ── */
-#login-overlay, #unauthorized-overlay {
-  position: fixed;
-  inset: 0;
-  background: var(--page-bg);
-  z-index: 9998;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
-  color: var(--text);
-}
-#login-overlay.hidden, #unauthorized-overlay.hidden { display: none; }
-.auth-card {
-  width: 100%;
-  max-width: 420px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 36px 32px;
-  box-shadow: 0 8px 30px rgba(1,4,29,0.06);
-  text-align: center;
-}
-.auth-card h1 {
-  font-family: 'DM Serif Display', serif;
-  font-size: 22px;
-  font-weight: 400;
-  color: var(--text);
-  margin: 0 0 8px;
-  letter-spacing: -0.01em;
-}
-.auth-card .sub {
-  font-size: 13px;
-  color: var(--dim);
-  line-height: 1.55;
-  margin: 0 0 24px;
-}
-.auth-card form { display: flex; flex-direction: column; gap: 10px; }
-.auth-card input[type="email"] {
-  width: 100%;
-  padding: 12px 14px;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: inherit;
-  color: var(--text);
-  box-sizing: border-box;
-}
-.auth-card input[type="email"]:focus { outline: none; border-color: var(--accent); }
-.auth-card button {
-  padding: 12px 18px;
-  background: var(--accent);
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  letter-spacing: 0.02em;
-  transition: background 0.15s ease;
-}
-.auth-card button:hover { background: var(--accent-dim); }
-.auth-card button:disabled { opacity: 0.55; cursor: not-allowed; }
-.auth-card .err {
-  font-size: 12px;
-  color: var(--red);
-  margin-top: 4px;
-  min-height: 16px;
-  line-height: 1.4;
-}
-.auth-card .ok {
-  font-size: 13px;
-  color: var(--text);
-  background: rgba(151,27,255,0.06);
-  border: 1px solid var(--border-accent);
-  border-radius: 8px;
-  padding: 16px;
-  line-height: 1.55;
-}
-.auth-card .ok strong { color: var(--accent); }
+/* Auth overlay/indicator styles removed — page is now public, no gating. */
 
-/* Signed-in indicator — sits above the sticky topnav (z-index 200) */
-#signed-in-indicator {
-  position: fixed;
-  top: 12px;
-  right: 18px;
-  z-index: 9000;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 11px;
-  color: rgba(255,255,255,0.88);
-  letter-spacing: 0.02em;
-  background: rgba(151,27,255,0.22);
-  border: 1px solid rgba(151,27,255,0.45);
-  padding: 6px 12px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-#signed-in-indicator.hidden { display: none; }
-#signed-in-indicator a {
-  color: rgba(255,255,255,0.95);
-  text-decoration: none;
-  margin-left: 8px;
-  padding-left: 8px;
-  border-left: 1px solid rgba(255,255,255,0.25);
-}
-#signed-in-indicator a:hover { color: #ffffff; }
+/* Track-only mode: hide all top-nav dropdowns. The page lands on the
+   Track Record section directly; other sections are hidden via inline
+   display:none on the section divs. Keep these rules so re-enabling
+   nav later only requires un-hiding the .nav-item divs. */
+#topnav .nav-item, #topnav .nav-toggle { display: none !important; }
 
 /* ── Tier 1 (preview) view ──────────────────────────────────────────────
    body.tier-1 is set by bootstrap() once PMT_DATA.tier resolves. Until
@@ -1337,29 +1232,7 @@ body.tier-1 .tier-1-cta {
   <div class="label">Loading portfolio data…</div>
 </div>
 
-<div id="login-overlay" class="hidden">
-  <div class="auth-card">
-    <h1>Nectar Investor Data Room</h1>
-    <p class="sub">Enter your email to receive a sign-in link</p>
-    <form id="login-form">
-      <input id="login-email" type="email" placeholder="you@example.com" required autocomplete="email">
-      <button type="submit" id="login-submit">Send sign-in link</button>
-      <div class="err" id="login-error"></div>
-    </form>
-  </div>
-</div>
-
-<div id="unauthorized-overlay" class="hidden">
-  <div class="auth-card">
-    <h1>Access Pending</h1>
-    <p class="sub" id="unauthorized-sub">Your account is not authorized to view this data room. Please contact Nectar to request access.</p>
-    <button type="button" id="unauthorized-signout">Sign out</button>
-  </div>
-</div>
-
-<div id="signed-in-indicator" class="hidden">
-  <span id="signed-in-email"></span><a href="#" id="sign-out-link">Sign out</a>
-</div>
+<!-- Auth overlays + signed-in indicator removed — page is public. -->
 
 <nav id="topnav" style="background:#01041D;border-bottom:3px solid transparent;border-image:linear-gradient(90deg,#5DE7DC,#971BFF,#3302F7) 1;">
   <div class="tn-logo" style="display:flex;align-items:center"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 548.37 192.34"><defs><style>.cls-1{fill:#FFFFFF;}.cls-2{fill:url(#linear-gradient);}</style><linearGradient id="linear-gradient" x1="121.6" y1="4.01" x2="14.26" y2="142.51" gradientUnits="userSpaceOnUse"><stop offset="0.34" stop-color="#5be9d9"/><stop offset="0.54" stop-color="#7e75ee"/><stop offset="0.69" stop-color="#981efe"/><stop offset="1" stop-color="#3302f7"/></linearGradient></defs><g id="Layer_2" data-name="Layer 2"><g id="Layer_1-2" data-name="Layer 1"><path class="cls-1" d="M210.45,125.83v39.59a4.59,4.59,0,0,1-9.18,0V125.83c0-13.67-9.18-23.79-21.86-23.79-13.11,0-23.31,10.54-23.31,23.79v39.59a4.59,4.59,0,0,1-9.18,0V97.49a4.59,4.59,0,0,1,9.18,0v5.12a32.58,32.58,0,0,1,23.31-9.54,29.9,29.9,0,0,1,22.73,9.83C207.54,108.88,210.45,117,210.45,125.83Z"/><path class="cls-1" d="M258.54,170c-21.28,0-37.16-16.52-37.16-38.45a40.07,40.07,0,0,1,9.91-27.06,35.24,35.24,0,0,1,26.52-11.39c20.84,0,35.85,16.09,35.85,38.45a4.65,4.65,0,0,1-4.67,4.56H230.85c2,14.38,13.26,24.78,27.69,24.78,9.76,0,18.36-4.56,23.31-12.82a4.78,4.78,0,0,1,6.41-1.42,4.54,4.54,0,0,1,1.61,6.26A36.29,36.29,0,0,1,258.54,170Zm-27.69-43H284c-1.75-14.81-12-24.93-26.23-24.93S232.74,112.3,230.85,127Z"/><path class="cls-1" d="M341.74,170c-21.13,0-37.16-16.52-37.16-38.45s16-38.45,37.16-38.45c12.24,0,23.17,5.41,30,15.1a4.5,4.5,0,0,1-1.17,6.41,4.73,4.73,0,0,1-6.41-1.14A26.9,26.9,0,0,0,341.74,102c-15.88,0-28,12.68-28,29.48s12.1,29.34,28,29.34a26.79,26.79,0,0,0,22.44-11.25,4.59,4.59,0,0,1,6.41-1.14,4.36,4.36,0,0,1,1.17,6.27A36.19,36.19,0,0,1,341.74,170Z"/><path class="cls-1" d="M419.85,157.16a4.45,4.45,0,0,1,.58,6.41,19,19,0,0,1-14.28,6.4c-10.49,0-18.94-8.26-18.94-18.37V102H383a4.49,4.49,0,1,1,0-9h4.23V78.55A4.64,4.64,0,0,1,391.87,74a4.55,4.55,0,0,1,4.66,4.56V93.07H413a4.49,4.49,0,1,1,0,9H396.53V151.6a9.48,9.48,0,0,0,9.62,9.26,9.13,9.13,0,0,0,7.14-3.28A4.71,4.71,0,0,1,419.85,157.16Z"/><path class="cls-1" d="M498.83,97.49v67.93a4.67,4.67,0,0,1-9.33,0v-8a36.28,36.28,0,0,1-28,12.53c-21.13,0-37.16-16.52-37.16-38.45s16-38.45,37.16-38.45a36.63,36.63,0,0,1,28,12.39v-8a4.67,4.67,0,0,1,9.33,0Zm-9.33,34c0-16.8-11.95-29.48-28-29.48-15.88,0-27.83,12.68-27.83,29.48s11.95,29.34,27.83,29.34C477.55,160.86,489.5,148.18,489.5,131.52Z"/><path class="cls-1" d="M548.37,97.49a4.55,4.55,0,0,1-4.66,4.55c-12.83,0-22.59,10.26-22.59,23.79v39.59a4.59,4.59,0,0,1-9.18,0V97.49a4.59,4.59,0,0,1,9.18,0v4.7a31.43,31.43,0,0,1,22.59-9.12A4.53,4.53,0,0,1,548.37,97.49Z"/><path class="cls-2" d="M173.72,65.38c-.9-.47-19.4-10.13-35.51-10.44-1.92-2.77-8.69-11-20.82-10.49-6.2.27-14,9.19-18.26,14.77C84.36,23.61,52.34,1.46,50.92.49A2.87,2.87,0,0,0,48.44.14,2.85,2.85,0,0,0,46.65,1.9c-.3.86-4.6,14,2.34,39.62A171.7,171.7,0,0,0,3.42,25a2.83,2.83,0,0,0-3.37,3.3C.37,30,8.68,70.74,75.18,109.35a152.5,152.5,0,0,0,.31,80.92,2.83,2.83,0,0,0,2.73,2.07,2.35,2.35,0,0,0,.52-.05,2.82,2.82,0,0,0,2.3-3c-.05-.5-4.53-50.19,18.86-68.63s23.88-25.19,24.8-36.47c.11-1.23.21-2.52.36-3.91l0-.41c.61-6.17,2.37-15.74,7.33-18.79,15.21-2.86,38.41,9.24,38.64,9.36a2.78,2.78,0,0,0,1.32.33,2.83,2.83,0,0,0,1.33-5.34ZM51.22,7.78c9,7,33.12,27.82,44,56.92q-2.4,3.57-4.69,7.5A177.46,177.46,0,0,0,56.17,45.57C50.16,26.36,50.46,13.74,51.22,7.78ZM79.76,95A234,234,0,0,1,59.2,54.32,178,178,0,0,1,87.59,77.48,151.91,151.91,0,0,0,79.76,95ZM6.94,31.56A165.11,165.11,0,0,1,51.39,49.49c4.72,14.24,12.73,31.69,26,52.38-.2.62-.4,1.23-.59,1.86C26.18,74,11,42.79,6.94,31.56Zm112.52,47.7,0,.38c-.15,1.43-.26,2.77-.37,4-.85,10.4-1.28,15.62-22.66,32.48C85.45,124.78,78.6,139.86,76,161l0,.23a147,147,0,0,1,3.57-45.7,151.73,151.73,0,0,1,12.2-33.64,106.79,106.79,0,0,1,8.57,10.33A2.83,2.83,0,0,0,105,89,114.85,114.85,0,0,0,94.64,76.46a120.52,120.52,0,0,1,7.46-11.74c7.59-10.48,13.56-14.52,15.53-14.6.29,0,.57,0,.85,0a17.93,17.93,0,0,1,12.61,5.19C126,57.38,121,63.67,119.46,79.26Z"/></g></g></svg></div>
@@ -1387,10 +1260,8 @@ body.tier-1 .tier-1-cta {
       <a href="#" onclick="showSec('fit');return false;" id="nd-fit">Is This Right For You?</a>
     </div>
   </div>
-  <a class="tier-1-cta"
-     href="mailto:lilato@usenectar.com?subject=Nectar%20Investor%20Data%20Room%20-%20Full%20Access%20Request&body=Hi,%0A%0AI%20am%20interested%20in%20receiving%20full%20access%20to%20the%20Nectar%20Investor%20Data%20Room.%0A%0AThank%20you."
-     >Request Full Access →</a>
-  <button id="navToggle" class="nav-toggle" type="button" aria-label="Menu" aria-expanded="false">
+  <!-- "Request Full Access" CTA removed — page is public, no gating. -->
+  <button id="navToggle" class="nav-toggle" type="button" aria-label="Menu" aria-expanded="false" style="display:none">
     <span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span>
   </button>
 </nav>
@@ -1398,7 +1269,9 @@ body.tier-1 .tier-1-cta {
 
 
 <!-- ═══════ 1A: THE FIRM ═══════ -->
-<div id="sec-firm" class="dr-sec ds-active">
+<!-- Hidden per Walker's "Track Record only" directive (2026-05-29). Source
+     preserved for easy revive — drop the inline style attr to restore. -->
+<div id="sec-firm" class="dr-sec" style="display:none !important">
   <div class="firm-eyebrow">RE Nectar Inc. — About</div>
   <h1 class="firm-hl">Small Balance Preferred Equity.<br><em>Institutional Discipline.</em></h1>
   <div class="stat-strip">
@@ -1957,7 +1830,8 @@ body.tier-1 .tier-1-cta {
     .main { max-width: 1400px; margin: 0 auto; padding: 28px 32px; }
   }
 </style>
-<div id="sec-fund2" class="dr-sec">
+<!-- Hidden per Walker's "Track Record only" directive. Source preserved. -->
+<div id="sec-fund2" class="dr-sec" style="display:none !important">
   <div class="firm-eyebrow">Fund Brief — February 2026</div>
   <h1 class="firm-hl">Nectar Fund II.<br><em>Mid-Market Mezzanine &amp; Preferred Equity.</em></h1>
   <p style="font-size:14px;color:#5A6A8A;line-height:1.7;max-width:760px;margin-bottom:36px">A diversified portfolio of preferred-equity and cash-flow-assignment positions in stabilized small-balance commercial real estate. Sourced directly from the <strong style="color:#01041D">Nectar Fund II Investor Deck</strong> — see the <a href="#" onclick="showSec('terms');return false;" style="color:#971BFF">Fund Terms</a> page for share class economics, or the <a href="#" onclick="showSec('track');return false;" style="color:#971BFF">Track Record</a> with the Fund filter set to "Nectar Fund II" for the deal-by-deal view.</p>
@@ -2245,7 +2119,8 @@ body.tier-1 .tier-1-cta {
 </div>
 
 <!-- ═══════ 1C: CASE STUDIES ═══════ -->
-<div id="sec-cases" class="dr-sec">
+<!-- Hidden per Walker's "Track Record only" directive. Source preserved. -->
+<div id="sec-cases" class="dr-sec" style="display:none !important">
   <div class="cs-eyebrow">Case Studies — Execution</div>
   <h2 class="cs-hl">What Good Looks Like</h2>
   <div class="cs-grid">
@@ -2306,7 +2181,8 @@ body.tier-1 .tier-1-cta {
 </div>
 
 <!-- ═══════ 2A: MARKET DYNAMICS ═══════ -->
-<div id="sec-market" class="dr-sec">
+<!-- Hidden per Walker's "Track Record only" directive. Source preserved. -->
+<div id="sec-market" class="dr-sec" style="display:none !important">
   <div class="opp-eyebrow">The Opportunity — Market Dynamics</div>
   <h2 class="opp-hl">The Case for Small Balance Preferred Equity — Now</h2>
   <p class="opp-sub">A supply correction, a credit market reset, and a structural gap that large institutions cannot fill.</p>
@@ -2475,7 +2351,8 @@ body.tier-1 .tier-1-cta {
 
 
 <!-- ═══════ 2B: WHERE WE OPERATE ═══════ -->
-<div id="sec-operate" class="dr-sec">
+<!-- Hidden per Walker's "Track Record only" directive. Source preserved. -->
+<div id="sec-operate" class="dr-sec" style="display:none !important">
   <div class="opp-eyebrow">The Opportunity — Where We Operate</div>
   <h2 class="opp-hl">The Sub-$10M Preferred Equity Gap</h2>
   <p class="opp-sub">Institutional quality collateral. Institutional complexity. But not institutional check sizes — which means institutions mostly aren't here.</p>
@@ -2507,7 +2384,8 @@ body.tier-1 .tier-1-cta {
 </div>
 
 <!-- ═══════ 2C: WHY NECTAR ═══════ -->
-<div id="sec-whynectar" class="dr-sec">
+<!-- Hidden per Walker's "Track Record only" directive. Source preserved. -->
+<div id="sec-whynectar" class="dr-sec" style="display:none !important">
   <div class="opp-eyebrow">The Opportunity — Why Nectar</div>
   <h2 class="opp-hl">Built for This Market</h2>
   <p class="opp-sub">The market opportunity is real. Executing on it requires three things that take years to build and cannot be replicated quickly.</p>
@@ -2528,7 +2406,8 @@ body.tier-1 .tier-1-cta {
 </div>
 
 <!-- ═══════ 3A: FUND TERMS ═══════ -->
-<div id="sec-terms" class="dr-sec">
+<!-- Hidden per Walker's "Track Record only" directive. Source preserved. -->
+<div id="sec-terms" class="dr-sec" style="display:none !important">
   <div class="opp-eyebrow">Invest — Fund Structure</div>
   <h2 class="terms-hl">Simple Economics. Aligned Incentives.</h2>
   <p class="terms-sub">One fund. Two share classes. Investors choose the return profile that fits their portfolio construction.</p>
@@ -2612,7 +2491,8 @@ body.tier-1 .tier-1-cta {
 </div>
 
 <!-- ═══════ 3B: IS THIS RIGHT FOR YOU ═══════ -->
-<div id="sec-fit" class="dr-sec">
+<!-- Hidden per Walker's "Track Record only" directive. Source preserved. -->
+<div id="sec-fit" class="dr-sec" style="display:none !important">
   <div class="opp-eyebrow">Invest — Fit Assessment</div>
   <h2 class="fit-hl">The Right Investor for This Strategy</h2>
   <p class="fit-sub">This is not a strategy for everyone. Here is an honest assessment of who it fits and who it doesn't.</p>
@@ -2975,109 +2855,18 @@ function showOverlayError(message) {
   overlay.classList.remove("hidden");
 }
 
-// ── Auth UI helpers ────────────────────────────────────────────────────────
+// ── Bootstrap (public, no auth) ────────────────────────────────────────────
+// Page is publicly accessible — no sign-in, no email allowlist. The Supabase
+// RPC `get_pmt_data` still needs to permit anon role on the server side for
+// data to load for unauthenticated visitors.
 async function waitForSupabase(timeoutMs = 5000) {
   const start = Date.now();
   while (!window.supabase) {
     if (Date.now() - start > timeoutMs) {
-      throw new Error("Authentication library failed to load. Check your network and reload.");
+      throw new Error("Supabase library failed to load. Check your network and reload.");
     }
     await new Promise(r => setTimeout(r, 50));
   }
-}
-
-function showLoginOverlay() {
-  document.getElementById("login-overlay")?.classList.remove("hidden");
-  document.getElementById("pmt-loading-overlay")?.classList.add("hidden");
-  document.getElementById("unauthorized-overlay")?.classList.add("hidden");
-  document.getElementById("signed-in-indicator")?.classList.add("hidden");
-}
-
-function hideLoginOverlay() {
-  document.getElementById("login-overlay")?.classList.add("hidden");
-}
-
-function showUnauthorizedOverlay(email) {
-  const overlay = document.getElementById("unauthorized-overlay");
-  if (!overlay) return;
-  const sub = document.getElementById("unauthorized-sub");
-  if (sub && email) {
-    sub.textContent = `${email} is not authorized to view this data room. Please contact Nectar to request access.`;
-  }
-  overlay.classList.remove("hidden");
-  document.getElementById("pmt-loading-overlay")?.classList.add("hidden");
-  document.getElementById("login-overlay")?.classList.add("hidden");
-  document.getElementById("signed-in-indicator")?.classList.add("hidden");
-}
-
-function showSignedInIndicator(email) {
-  const ind = document.getElementById("signed-in-indicator");
-  if (!ind) return;
-  const span = document.getElementById("signed-in-email");
-  if (span) span.textContent = `Signed in as ${email}`;
-  ind.classList.remove("hidden");
-}
-
-async function handleLoginSubmit(e) {
-  e.preventDefault();
-  const emailInput = document.getElementById("login-email");
-  const submit = document.getElementById("login-submit");
-  const errEl = document.getElementById("login-error");
-  const email = (emailInput?.value || "").trim();
-  if (!email) return;
-  errEl.textContent = "";
-  submit.disabled = true;
-  submit.textContent = "Sending…";
-  try {
-    const { error } = await window.supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.origin + window.location.pathname },
-    });
-    if (error) throw error;
-    const card = document.querySelector("#login-overlay .auth-card");
-    if (card) {
-      card.innerHTML = `
-        <h1>Check your email</h1>
-        <div class="ok">We sent a sign-in link to <strong>${email}</strong>.<br>The link expires in 1 hour.</div>
-      `;
-    }
-  } catch (err) {
-    errEl.textContent = err.message || "Failed to send sign-in link. Please try again.";
-    submit.disabled = false;
-    submit.textContent = "Send sign-in link";
-  }
-}
-
-async function handleSignOut(e) {
-  if (e) e.preventDefault();
-  try {
-    await window.supabase.auth.signOut();
-  } catch (err) {
-    console.error("Sign out failed:", err);
-  }
-  // Clean URL (drop ?deal=) and reload to a fresh, signed-out state.
-  const url = new URL(window.location.href);
-  url.searchParams.delete("deal");
-  window.location.href = url.pathname + (url.search || "");
-}
-
-let _authWired = false;
-function wireAuthOnce() {
-  if (_authWired) return;
-  _authWired = true;
-  document.getElementById("login-form")?.addEventListener("submit", handleLoginSubmit);
-  document.getElementById("sign-out-link")?.addEventListener("click", handleSignOut);
-  document.getElementById("unauthorized-signout")?.addEventListener("click", handleSignOut);
-  // When a magic-link sign-in completes (possibly in another tab), swap from
-  // login screen to data room without requiring a manual reload.
-  window.supabase.auth.onAuthStateChange((event, session) => {
-    if (event === "SIGNED_IN" && session) {
-      const loginOverlay = document.getElementById("login-overlay");
-      if (loginOverlay && !loginOverlay.classList.contains("hidden")) {
-        bootstrap();
-      }
-    }
-  });
 }
 
 async function bootstrap() {
@@ -3087,19 +2876,6 @@ async function bootstrap() {
     showOverlayError(err.message);
     return;
   }
-  wireAuthOnce();
-
-  const { data: { session } } = await window.supabase.auth.getSession();
-  if (!session) {
-    showLoginOverlay();
-    return;
-  }
-
-  hideLoginOverlay();
-  document.getElementById("unauthorized-overlay")?.classList.add("hidden");
-  // Show the signed-in indicator as soon as we have a session, before the
-  // data fetch — that way it's visible even if loadPmtData / initApp throw.
-  showSignedInIndicator(session.user?.email);
 
   const overlay = document.getElementById("pmt-loading-overlay");
   if (overlay) {
@@ -3111,12 +2887,11 @@ async function bootstrap() {
   }
   try {
     PMT_DATA = await loadPmtData();
-    if (!PMT_DATA || !Array.isArray(PMT_DATA.tape) || PMT_DATA.tape.length === 0) {
-      showUnauthorizedOverlay(session.user?.email);
+    if (!PMT_DATA || !Array.isArray(PMT_DATA.tape)) {
+      showOverlayError("Portfolio data is unavailable. Please try again.");
       return;
     }
-    // Tier resolution. Backend RPC returns {tape, dpd, sched, workouts, tier};
-    // a missing tier is treated as Tier 2 so legacy clients see the full view.
+    // Tier resolution from the RPC response. Missing tier → Tier 2 (full).
     window.NC_TIER = (PMT_DATA && PMT_DATA.tier != null) ? PMT_DATA.tier : 2;
     document.body.classList.remove("tier-0", "tier-1", "tier-2");
     document.body.classList.add("tier-" + window.NC_TIER);
@@ -3125,9 +2900,8 @@ async function bootstrap() {
     } else {
       console.error("initApp() is not defined — existing startup code was not wrapped correctly.");
     }
-    // Tier 1 lands on Track Record directly (the firm overview / opportunity /
-    // invest sections are hidden via CSS, and the Summary view is the preview).
-    if (window.NC_TIER === 1 && typeof showSec === "function") {
+    // Track-only mode: always land on the Track Record section.
+    if (typeof showSec === "function") {
       showSec("track");
     }
     if (typeof applyDeepLink === "function") applyDeepLink();
@@ -5532,9 +5306,14 @@ function openOP(deal) {
     _cumSched  += Number(r.sched_amt)  || 0;
     _cumActual += Number(r.actual_amt) || 0;
     const pn = r.pmt_num || 0;
+    // Identify post-term directly from the row shape (per Walker's spec):
+    // sched=0/null AND actual>0. More robust than pn>lastInTermPmt, which
+    // depended on the lastInTermPmt computation being right.
+    const _isPostTerm = (r.sched_amt == null || Number(r.sched_amt) === 0)
+                        && Number(r.actual_amt) > 0;
     return {
       pmt_num:    pn,
-      isPostTerm: pn > lastInTermPmt,
+      isPostTerm: _isPostTerm,
       month:      formatPaymentMonth(r.month_str),
       sched:      Number(r.sched_amt) || 0,
       actual:     Number(r.actual_amt) || 0,
@@ -6366,6 +6145,11 @@ function initApp() {
 }
 
 // ═══════ DATA ROOM NAVIGATION ═══════
+// Track-only mode: showSec always lands on sec-track regardless of arg,
+// and the on-load handler defaults to track. Other sections are kept in
+// source (display:none on each opening tag) so revival just needs to drop
+// the inline style + remove this guard. SEC_PARENT map kept for the same
+// reason — un-hiding requires no JS edits.
 const SEC_PARENT = {
   firm:'nb-wwa', track:'nb-wwa', fund2:'nb-wwa', cases:'nb-wwa',
   market:'nb-opp', operate:'nb-opp', whynectar:'nb-opp',
@@ -6373,6 +6157,9 @@ const SEC_PARENT = {
 };
 
 function showSec(id) {
+  // Force-redirect any non-track navigation to track in this mode.
+  id = 'track';
+
   // Hide all dr-sec sections and sec-track
   document.querySelectorAll('.dr-sec').forEach(s => {
     s.classList.remove('ds-active');
@@ -6386,38 +6173,21 @@ function showSec(id) {
   if (el) {
     el.style.display = 'block';
     el.classList.add('ds-active');
-    if (id === 'track') {
-      // re-render charts when track becomes visible
-      setTimeout(() => { try { renderCashFlow(); } catch(e){} }, 80);
-    }
-    if (id === 'market') {
-      setTimeout(() => { try { renderMarketCharts(); } catch(e){} }, 100);
-    }
+    // re-render charts when track becomes visible
+    setTimeout(() => { try { renderCashFlow(); } catch(e){} }, 80);
   }
-
-  // Nav active states
-  document.querySelectorAll('.nav-drop a').forEach(a => a.classList.remove('nd-active'));
-  const lnk = document.getElementById('nd-' + id);
-  if (lnk) lnk.classList.add('nd-active');
-
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('nav-active'));
-  const btn = document.getElementById(SEC_PARENT[id]);
-  if (btn) btn.classList.add('nav-active');
 
   window.scrollTo(0, 0);
 }
 
-// On load: hide everything, show firm
+// On load: default to sec-track (no auth, no firm landing page).
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.dr-sec').forEach(s => {
     s.style.display = 'none';
     s.classList.remove('ds-active');
   });
   const track = document.getElementById('sec-track');
-  if (track) { track.style.display = 'none'; track.classList.remove('ds-active'); }
-
-  const firm = document.getElementById('sec-firm');
-  if (firm) { firm.style.display = 'block'; firm.classList.add('ds-active'); }
+  if (track) { track.style.display = 'block'; track.classList.add('ds-active'); }
 });
 
 
@@ -6557,7 +6327,10 @@ function renderDealDetail(lid) {
               const bucket = statusBucket(dpdVal);
               const balColor = eomBal > 0 ? 'var(--red)' : 'var(--green)';
               const dpdColor = dpdVal >= 90 ? 'var(--red)' : dpdVal >= 30 ? 'var(--amber)' : 'var(--dim)';
-              const isPostTerm = (r.pmt_num || 0) > lastInTermPmt;
+              // Identify post-term directly from row shape (Walker's spec):
+              // sched=0/null AND actual>0. Robust to data-shape drift.
+              const isPostTerm = (r.sched_amt == null || Number(r.sched_amt) === 0)
+                                 && Number(r.actual_amt) > 0;
               const rowStyle = `border-bottom:1px solid rgba(1,4,29,0.06)${isPostTerm ? ';background:rgba(255,200,100,0.06)' : ''}`;
               const pmtCell = isPostTerm
                 ? `<span style="color:var(--dim)">—</span> <span style="font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">post-term</span>`
