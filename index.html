@@ -2981,8 +2981,24 @@ function getUnitCount(dealId) {
 }
 
 // Portfolio observation date (UTC), matching the data cutoff baked into the tape.
+// This drives DPD math and must stay pinned to the tape cutoff — do NOT make
+// it dynamic.
 const OBS_DATE = new Date(Date.UTC(2026, 3, 22));
-const OBS_MONTH_STR = "2026-04";
+
+// Payment History display cutoff: only show months whose books are fully
+// closed. Rule (per Walker): hide any month later than "current calendar
+// month minus 2." Rolls forward automatically — e.g. June 2026 → "2026-04"
+// (Apr and earlier visible); July 1 2026 → "2026-05". This affects ONLY what
+// the Payment History table/modal preview render; it does NOT touch
+// total_collected / MOIC, which always reflect all cash collected.
+function computeObsMonthStr() {
+  const now = new Date();
+  const cutoff = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+  const yyyy = cutoff.getFullYear();
+  const mm = String(cutoff.getMonth() + 1).padStart(2, '0');
+  return `${yyyy}-${mm}`;
+}
+const OBS_MONTH_STR = computeObsMonthStr();
 
 // ── RAW DATA ────────────────────────────────────────────────────────────────
 // Source of truth for the Tier 2 (full) render path. INLINE in the HTML —
@@ -5276,14 +5292,10 @@ function openOP(deal) {
 
   // Payment history (last 6 months, sourced from PMT_DATA.dpd)
   const dpdArr = PMT_DATA.dpd[deal.id] || [];
-  const now = new Date();
-  const curMonthStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-  const curEom = endOfPaymentMonth(curMonthStr);
+  // Only show months whose books are fully closed (current month minus 2),
+  // matching the deal-detail Payment History table. See computeObsMonthStr.
   const visible = dpdArr
-    .filter(r => {
-      const eom = endOfPaymentMonth(r.month_str);
-      return eom && curEom && eom <= curEom;
-    })
+    .filter(r => r.month_str && r.month_str <= OBS_MONTH_STR)
     .sort((a, b) => (a.pmt_num || 0) - (b.pmt_num || 0));
   // Post-term display: end of regular schedule is the highest pmt_num with
   // sched_amt > 0. Keep all in-term rows; keep post-term rows ONLY when
