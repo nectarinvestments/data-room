@@ -2609,20 +2609,20 @@ body.tier-1 .tier-1-cta {
       <div class="kpi-value" id="kpiCollected">—</div>
       <div class="kpi-sub" id="kpiCollectedPct">— of deployed</div>
     </div>
-    <div class="kpi">
-      <div class="kpi-label">Outstanding Principal</div>
+    <div class="kpi" id="kpiCard3">
+      <div class="kpi-label" id="kpiC3Label">Outstanding Principal</div>
       <div class="kpi-value" id="kpiOutstanding">—</div>
       <div class="kpi-sub" id="kpiOutPct">— of open book</div>
     </div>
-    <div class="kpi">
-      <div class="kpi-label">Avg DSCR</div>
+    <div class="kpi" id="kpiCard4">
+      <div class="kpi-label" id="kpiC4Label">Avg DSCR</div>
       <div class="kpi-value" id="kpiDSCR">—</div>
-      <div class="kpi-sub">performing book</div>
+      <div class="kpi-sub" id="kpiC4Sub">performing book</div>
     </div>
-    <div class="kpi">
-      <div class="kpi-label">Avg CLTV</div>
+    <div class="kpi" id="kpiCard5">
+      <div class="kpi-label" id="kpiC5Label">Avg CLTV</div>
       <div class="kpi-value" id="kpiLTV">—</div>
-      <div class="kpi-sub">performing book</div>
+      <div class="kpi-sub" id="kpiC5Sub">performing book</div>
     </div>
   </div>
 
@@ -4795,7 +4795,7 @@ function renderAll() {
 
 // ── KPIs ──────────────────────────────────────────────────────────────────
 function renderKPIs() {
-  if (window.NC_TIER === 1) { renderKPIsTier1(); return; }
+  if (window.NC_TIER === 1) { renderKPIsTier1(); syncClosedKpiCards(); return; }
   const open = filtered.filter(d => d.status === 'Open');
   const sumAdvance = arr => arr.reduce((s,d) => s + (metricFor(d,'advance') || 0), 0);
   const totalDeployed = sumAdvance(filtered);
@@ -4815,6 +4815,7 @@ function renderKPIs() {
   if (document.getElementById('kpiIRR')) document.getElementById('kpiIRR').textContent = fmtPct(avgIRR);
   document.getElementById('kpiDSCR').textContent = avgDSCR.toFixed(2) + 'x';
   document.getElementById('kpiLTV').textContent = fmtPct(avgLTV);
+  syncClosedKpiCards();
 }
 
 // Tier 1 KPI render — sources from filteredTape (PMT_DATA.tape rows), which
@@ -4840,6 +4841,97 @@ function renderKPIsTier1() {
   document.getElementById('kpiOutPct').textContent = openAdv ? fmtPct(totalOutstanding/openAdv*100) + ' of open book' : '—';
   document.getElementById('kpiDSCR').textContent = dscrRows.length ? avgDSCR.toFixed(2) + 'x' : '—';
   document.getElementById('kpiLTV').textContent  = ltvRows.length  ? avgLTV.toFixed(1) + '%'  : '—';
+}
+
+// ── CLOSED-DEAL KPI CARDS ───────────────────────────────────────────────────
+// When the top-level status filter is "Closed", the 3rd–5th KPI cards
+// (Outstanding / DSCR / CLTV — all forward-looking open-book metrics) are
+// repurposed to realized closed-book metrics. All values are computed
+// client-side from PMT_DATA (tape + dpd) — the same data the page already
+// loaded — so no extra RPC call is needed. Computed portfolio-wide across every
+// closed deal, independent of the asset/type/vintage sub-filters.
+function computeClosedMetrics() {
+  const tape = (PMT_DATA && PMT_DATA.tape) ? PMT_DATA.tape : [];
+  const dpd  = (PMT_DATA && PMT_DATA.dpd)  ? PMT_DATA.dpd  : {};
+  const closed = tape.filter(t => t.status === 'Closed' && t.id !== 'LP-123');
+
+  const DAY_MS = 86400000, MONTH_DAYS = 30.44;
+  let sumColl = 0, sumAdv = 0;   // MOIC: pooled dollars
+  let irrNum = 0, irrDen = 0;    // Realized IRR: advance-weighted act_irr (percent units)
+  let durNum = 0, durDen = 0;    // Duration: advance-weighted months, first due → close
+
+  for (const t of closed) {
+    const adv = +t.advance || 0;
+    // MOIC includes every closed deal, even one missing payment rows.
+    sumColl += (+t.total_collected || 0);
+    sumAdv  += adv;
+
+    // Realized IRR — capital-weighted mean of each deal's actual annualized IRR.
+    if (t.act_irr != null && isFinite(+t.act_irr)) {
+      irrNum += adv * (+t.act_irr);
+      irrDen += adv;
+    }
+
+    // Duration — needs payment rows (origination proxy = earliest due date) and
+    // a close date; skip the deal from this metric if either is missing.
+    const rows = dpd[t.id] || dpd[String(t.id)] || [];
+    if (!rows.length || !t.close_date) continue;
+    let firstDue = null;
+    for (const r of rows) {
+      if (!r.due_date) continue;
+      const ms = new Date(r.due_date).getTime();
+      if (!isFinite(ms)) continue;
+      if (firstDue === null || ms < firstDue) firstDue = ms;
+    }
+    if (firstDue === null) continue;
+    const closeMs = new Date(t.close_date).getTime();
+    if (!isFinite(closeMs)) continue;
+    const months = (closeMs - firstDue) / DAY_MS / MONTH_DAYS;
+    if (isFinite(months) && months > 0) { durNum += adv * months; durDen += adv; }
+  }
+
+  return {
+    irr:  irrDen ? irrNum / irrDen : null,   // already in percent (e.g. 26.9)
+    moic: sumAdv ? sumColl / sumAdv : null,
+    dur:  durDen ? durNum / durDen : null,
+  };
+}
+
+// Toggle the 3rd–5th KPI cards between open-book (default) and closed-book
+// labels/values. Values for the open-book view are written by renderKPIs/Tier1;
+// here we only override when "Closed" is active and restore otherwise.
+function syncClosedKpiCards() {
+  const c3 = document.getElementById('kpiCard3');
+  const c4 = document.getElementById('kpiCard4');
+  const c5 = document.getElementById('kpiCard5');
+  if (!c3 || !c4 || !c5) return;
+
+  if (statusFilter === 'Closed') {
+    const m = computeClosedMetrics();
+    document.getElementById('kpiC3Label').textContent = 'Realized IRR';
+    document.getElementById('kpiOutstanding').textContent = m.irr == null ? '—' : m.irr.toFixed(1) + '%';
+    document.getElementById('kpiOutPct').textContent = 'Closed book · advance-weighted';
+    c3.title = 'Realized IRR — capital-weighted average of each closed deal’s actual annualized return, so larger positions count more.';
+
+    document.getElementById('kpiC4Label').textContent = 'MOIC';
+    document.getElementById('kpiDSCR').textContent = m.moic == null ? '—' : m.moic.toFixed(2) + 'x';
+    document.getElementById('kpiC4Sub').textContent = 'Total collected ÷ deployed';
+    c4.title = 'MOIC — every dollar collected across all closed deals divided by every dollar deployed.';
+
+    document.getElementById('kpiC5Label').textContent = 'Wtd. Avg. Duration';
+    document.getElementById('kpiLTV').textContent = m.dur == null ? '—' : m.dur.toFixed(1) + ' months';
+    document.getElementById('kpiC5Sub').textContent = 'Advance-weighted hold';
+    c5.title = 'Weighted-average duration — months from first scheduled payment to deal close, weighted by capital deployed.';
+  } else {
+    document.getElementById('kpiC3Label').textContent = 'Outstanding Principal';
+    document.getElementById('kpiC4Label').textContent = 'Avg DSCR';
+    document.getElementById('kpiC4Sub').textContent = 'performing book';
+    document.getElementById('kpiC5Label').textContent = 'Avg CLTV';
+    document.getElementById('kpiC5Sub').textContent = 'performing book';
+    c3.removeAttribute('title');
+    c4.removeAttribute('title');
+    c5.removeAttribute('title');
+  }
 }
 
 // ── CHARTS ────────────────────────────────────────────────────────────────
