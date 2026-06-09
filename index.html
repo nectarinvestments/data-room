@@ -4846,21 +4846,24 @@ function renderKPIsTier1() {
 // ── CLOSED-DEAL KPI CARDS ───────────────────────────────────────────────────
 // When the top-level status filter is "Closed", the 3rd–5th KPI cards
 // (Outstanding / DSCR / CLTV — all forward-looking open-book metrics) are
-// repurposed to realized closed-book metrics. All values are computed
-// client-side from PMT_DATA (tape + dpd) — the same data the page already
-// loaded — so no extra RPC call is needed. Computed portfolio-wide across every
-// closed deal, independent of the asset/type/vintage sub-filters.
-function computeClosedMetrics() {
-  const tape = (PMT_DATA && PMT_DATA.tape) ? PMT_DATA.tape : [];
-  const dpd  = (PMT_DATA && PMT_DATA.dpd)  ? PMT_DATA.dpd  : {};
-  const closed = tape.filter(t => t.status === 'Closed' && t.id !== 'LP-123');
+// repurposed to realized closed-book metrics, all computed client-side from
+// PMT_DATA (tape + dpd) — the same data the page already loaded, no extra RPC.
+//
+// computeClosedMetrics(deals, dpd) is subset-agnostic: callers pass whatever
+// slice of closed deals they want (the whole closed book, or one close_type
+// bucket selected via the sub-status toggle) and get the same three metrics
+// back. `deals` is an array of tape rows; `dpd` is the PMT_DATA.dpd map (only
+// rows for ids present in `deals` are read).
+function computeClosedMetrics(deals, dpd) {
+  deals = deals || [];
+  dpd   = dpd   || {};
 
   const DAY_MS = 86400000, MONTH_DAYS = 30.44;
   let sumColl = 0, sumAdv = 0;   // MOIC: pooled dollars
   let irrNum = 0, irrDen = 0;    // Realized IRR: advance-weighted act_irr (percent units)
   let durNum = 0, durDen = 0;    // Duration: advance-weighted months, first due → close
 
-  for (const t of closed) {
+  for (const t of deals) {
     const adv = +t.advance || 0;
     // MOIC includes every closed deal, even one missing payment rows.
     sumColl += (+t.total_collected || 0);
@@ -4891,9 +4894,9 @@ function computeClosedMetrics() {
   }
 
   return {
-    irr:  irrDen ? irrNum / irrDen : null,   // already in percent (e.g. 26.9)
-    moic: sumAdv ? sumColl / sumAdv : null,
-    dur:  durDen ? durNum / durDen : null,
+    realizedIrr:         irrDen ? irrNum / irrDen : null,   // percent units (e.g. 26.9; may be negative)
+    moic:                sumAdv ? sumColl / sumAdv : null,
+    weightedAvgDuration: durDen ? durNum / durDen : null,   // months
   };
 }
 
@@ -4907,21 +4910,33 @@ function syncClosedKpiCards() {
   if (!c3 || !c4 || !c5) return;
 
   if (statusFilter === 'Closed') {
-    const m = computeClosedMetrics();
+    // Narrow the closed book to the active sub-status bucket (a close_type
+    // string, or 'all' for the whole closed book), then recompute the cards
+    // against just that slice. subStatusFilter is already kept in sync by
+    // setSubStatus → applyFilters → renderKPIs → here.
+    const tape = (PMT_DATA && PMT_DATA.tape) ? PMT_DATA.tape : [];
+    const dpd  = (PMT_DATA && PMT_DATA.dpd)  ? PMT_DATA.dpd  : {};
+    let closed = tape.filter(t => t.status === 'Closed' && t.id !== 'LP-123');
+    if (subStatusFilter && subStatusFilter !== 'all') {
+      closed = closed.filter(t => (t.close_type || null) === subStatusFilter);
+    }
+    const scope = (subStatusFilter && subStatusFilter !== 'all') ? subStatusFilter : 'all closed deals';
+    const m = computeClosedMetrics(closed, dpd);
+
     document.getElementById('kpiC3Label').textContent = 'Realized IRR';
-    document.getElementById('kpiOutstanding').textContent = m.irr == null ? '—' : m.irr.toFixed(1) + '%';
+    document.getElementById('kpiOutstanding').textContent = m.realizedIrr == null ? '—' : m.realizedIrr.toFixed(1) + '%';
     document.getElementById('kpiOutPct').textContent = 'Closed book · advance-weighted';
-    c3.title = 'Realized IRR — capital-weighted average of each closed deal’s actual annualized return, so larger positions count more.';
+    c3.title = `Realized IRR — capital-weighted average of each deal’s actual annualized return across ${scope}, so larger positions count more.`;
 
     document.getElementById('kpiC4Label').textContent = 'MOIC';
     document.getElementById('kpiDSCR').textContent = m.moic == null ? '—' : m.moic.toFixed(2) + 'x';
     document.getElementById('kpiC4Sub').textContent = 'Total collected ÷ deployed';
-    c4.title = 'MOIC — every dollar collected across all closed deals divided by every dollar deployed.';
+    c4.title = `MOIC — every dollar collected divided by every dollar deployed across ${scope}.`;
 
     document.getElementById('kpiC5Label').textContent = 'Wtd. Avg. Duration';
-    document.getElementById('kpiLTV').textContent = m.dur == null ? '—' : m.dur.toFixed(1) + ' months';
+    document.getElementById('kpiLTV').textContent = m.weightedAvgDuration == null ? '—' : m.weightedAvgDuration.toFixed(1) + ' months';
     document.getElementById('kpiC5Sub').textContent = 'Advance-weighted hold';
-    c5.title = 'Weighted-average duration — months from first scheduled payment to deal close, weighted by capital deployed.';
+    c5.title = `Weighted-average duration — months from first scheduled payment to deal close across ${scope}, weighted by capital deployed.`;
   } else {
     document.getElementById('kpiC3Label').textContent = 'Outstanding Principal';
     document.getElementById('kpiC4Label').textContent = 'Avg DSCR';
