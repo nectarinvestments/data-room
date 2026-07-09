@@ -1144,16 +1144,19 @@ tbody tr { cursor: pointer; }
   to { transform: rotate(360deg); }
 }
 
-/* ── Auth gate (login screen + logout control) ──
-   Any email may log in via Supabase magic link — there is no allowlist.
-   #login-overlay is the visible default until a session exists. */
+/* ── Investor sign-in gate + one-click NDA overlay ──────────────────────────
+   The data room is gated: content is not loaded or revealed until the visitor
+   is authenticated. This overlay shows on load for unauthenticated users and
+   is NOT dismissible (no close button, no Esc, no backdrop close). Flow:
+   name/email → (skip if NDA already signed) → NDA → record signing + send
+   magic link. NDA text lives in the DOM (versioned in git, ref key v1_2026-06);
+   it is never stored server-side. */
 #login-overlay {
   position: fixed;
   inset: 0;
   background: var(--page-bg);
   z-index: 9998;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 24px;
@@ -1161,32 +1164,32 @@ tbody tr { cursor: pointer; }
   color: var(--text);
 }
 #login-overlay.hidden { display: none; }
-.auth-card {
+#login-overlay .auth-card {
+  position: relative;
   width: 100%;
-  max-width: 420px;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 36px 32px;
-  box-shadow: 0 8px 30px rgba(1,4,29,0.06);
-  text-align: center;
+  padding: 34px 32px;
+  box-shadow: 0 18px 60px rgba(1,4,29,0.35);
 }
-.auth-card h1 {
+#login-overlay .login-step.hidden { display: none; }
+#login-overlay h1 {
   font-family: 'DM Serif Display', serif;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 400;
   color: var(--text);
   margin: 0 0 8px;
   letter-spacing: -0.01em;
 }
-.auth-card .sub {
-  font-size: 13px;
-  color: var(--dim);
-  line-height: 1.55;
-  margin: 0 0 24px;
-}
-.auth-card form { display: flex; flex-direction: column; gap: 10px; }
-.auth-card input[type="email"] {
+#login-overlay .sub { font-size: 13px; color: var(--dim); line-height: 1.55; margin: 0 0 22px; }
+#login-overlay form { display: flex; flex-direction: column; gap: 2px; }
+#login-overlay .fld { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+#login-overlay .fld > span { font-size: 12px; color: var(--dim); font-weight: 600; letter-spacing: .02em; }
+#login-overlay input {
   width: 100%;
   padding: 12px 14px;
   background: #fff;
@@ -1197,74 +1200,73 @@ tbody tr { cursor: pointer; }
   color: var(--text);
   box-sizing: border-box;
 }
-.auth-card input[type="email"]:focus { outline: none; border-color: var(--accent); }
-.auth-card button {
-  padding: 12px 18px;
+#login-overlay input:focus { outline: none; border-color: var(--accent); }
+#login-overlay button:not(.linklike) {
+  margin-top: 16px;
+  padding: 13px 18px;
   background: var(--accent);
-  color: #ffffff;
+  color: #fff;
   border: none;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  font-family: inherit;
-  letter-spacing: 0.02em;
-  transition: background 0.15s ease;
+  font-family: 'Manrope', sans-serif;
+  letter-spacing: .02em;
+  transition: background .15s ease;
 }
-.auth-card button:hover { background: var(--accent-dim); }
-.auth-card button:disabled { opacity: 0.55; cursor: not-allowed; }
-/* Status line under the button: neutral, error, or success states. */
-.auth-card .login-status {
+#login-overlay button:not(.linklike):hover { background: var(--accent-dim); }
+#login-overlay button:disabled { opacity: .5; cursor: not-allowed; }
+#login-overlay .err { font-size: 12px; color: var(--red); margin-top: 6px; min-height: 15px; line-height: 1.4; }
+#login-overlay .helper { font-size: 12px; color: var(--dim); line-height: 1.5; margin: 12px 0 0; }
+#login-overlay .ok {
   font-size: 13px;
-  margin-top: 14px;
-  min-height: 18px;
-  line-height: 1.5;
-  text-align: center;
-}
-.auth-card .login-status.err { color: var(--red); }
-.auth-card .login-status.ok {
   color: var(--text);
   background: rgba(151,27,255,0.06);
-  border: 1px solid var(--border-accent);
+  border: 1px solid rgba(151,27,255,0.25);
   border-radius: 8px;
-  padding: 14px;
+  padding: 16px;
+  line-height: 1.55;
 }
-
-/* Logout control — pinned to the right of the topnav, shows the signed-in
-   email next to a small log-out button. */
-#logout-control {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-family: 'DM Sans', system-ui, sans-serif;
-}
-#logout-control.hidden { display: none; }
-#logout-email {
-  font-size: 11px;
-  color: rgba(255,255,255,0.82);
-  letter-spacing: 0.02em;
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-#logout-btn {
-  padding: 6px 12px;
-  background: rgba(151,27,255,0.22);
-  border: 1px solid rgba(151,27,255,0.45);
-  color: rgba(255,255,255,0.95);
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+#login-overlay .ok strong { color: var(--accent); }
+.linklike {
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 12px;
   cursor: pointer;
-  font-family: inherit;
-  transition: background 0.15s ease;
+  padding: 6px 0 0;
+  margin-top: 8px;
+  font-family: 'Manrope', sans-serif;
 }
-#logout-btn:hover { background: rgba(151,27,255,0.4); }
+.linklike:hover { color: var(--accent); }
+
+/* NDA display panel */
+.nda-head { margin-bottom: 14px; }
+.nda-meta { font-size: 12.5px; color: var(--dim); line-height: 1.7; margin-top: 6px; }
+.nda-meta b { color: var(--text); font-weight: 600; }
+.nda-body {
+  max-height: 50vh;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 20px;
+  background: #fdfdfb;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1c2233;
+}
+.nda-body h4 { font-size: 14px; margin: 16px 0 6px; font-weight: 700; font-family: inherit; }
+.nda-body h4:first-child { margin-top: 0; }
+.nda-body p { margin: 0 0 10px; }
+.nda-body p:last-child { margin-bottom: 0; }
+.nda-body .lead { font-style: italic; color: #3a4257; }
+.nda-body .sub-p { margin-left: 18px; }
+.nda-ver { font-size: 11px; color: var(--dim); margin-top: 8px; font-family: 'DM Mono', monospace; letter-spacing: .02em; }
 @media (max-width: 600px) {
-  #logout-email { display: none; }
+  #login-overlay .auth-card { padding: 26px 20px; }
+  .nda-body { max-height: 46vh; }
 }
 
 /* Track-only mode: hide all top-nav dropdowns. The page lands on the
@@ -1353,17 +1355,108 @@ body.tier-1 .tier-1-cta {
   <div class="label">Loading portfolio data…</div>
 </div>
 
-<!-- Auth gate: login screen shown until a Supabase session exists. Any
-     email may request a magic link (no allowlist). -->
-<div id="login-overlay" class="hidden">
+<!-- Investor sign-in gate: shown on load for unauthenticated visitors and not
+     dismissible. Data room content is not revealed until a session exists. -->
+<div id="login-overlay" class="hidden" role="dialog" aria-modal="true" aria-label="Investor sign in">
   <div class="auth-card">
-    <h1>Nectar Investor Data Room</h1>
-    <p class="sub">Enter your email and we'll send you a secure login link.</p>
-    <form id="login-form">
-      <input id="login-email" type="email" placeholder="you@example.com" required autocomplete="email">
-      <button type="submit" id="login-submit">Send login link</button>
-    </form>
-    <div class="login-status" id="login-status"></div>
+
+    <!-- Step 1: identity -->
+    <div class="login-step" data-step="form">
+      <h1>Investor Sign In</h1>
+      <p class="sub">Enter your name and email. First-time visitors sign a short NDA; then we email you a secure sign-in link.</p>
+      <form id="login-form" novalidate autocomplete="on">
+        <label class="fld">
+          <span>Full name</span>
+          <input id="login-name" type="text" placeholder="Jane Investor" autocomplete="name">
+        </label>
+        <div class="err" id="login-name-error"></div>
+        <label class="fld">
+          <span>Email</span>
+          <input id="login-email" type="email" placeholder="you@example.com" autocomplete="email">
+        </label>
+        <div class="err" id="login-email-error"></div>
+        <button type="submit" id="login-continue" disabled>Continue</button>
+        <div class="err" id="login-form-error"></div>
+      </form>
+    </div>
+
+    <!-- Step 3: NDA (skipped when has_signed_nda is true) -->
+    <div class="login-step hidden" data-step="nda">
+      <div class="nda-head">
+        <h1>One-Way Non-Disclosure Agreement</h1>
+        <div class="nda-meta">
+          <div><b>Provider:</b> RE Nectar Inc.</div>
+          <div><b>Recipient:</b> <span id="nda-recipient"></span></div>
+          <div><b>Date:</b> <span id="nda-date"></span></div>
+        </div>
+      </div>
+      <div class="nda-body">
+        <p class="lead">By signing below you hereby agree to the terms of this agreement. The date and recipient name will be recorded electronically.</p>
+        <p>Provider: RE Nectar Inc.</p>
+        <p>Purpose for Information Disclosure: Discussion of a potential business relationship or transaction (the "Purpose").</p>
+        <p>THIS NON-DISCLOSURE AGREEMENT (this "Agreement") is entered into as of the date set forth above by and between the persons or entities identified above as "Provider" ("Provider") and "Recipient" ("Recipient").</p>
+        <p>Provider intends to provide or has provided the Recipient with certain technical and/or business information which the Provider considers to be confidential and proprietary. Recipient is willing to assure Provider that it will receive and hold such information in confidence and trust, and use and disclose such information only in support of the purposes for which it is provided. In consideration of the foregoing and other good and valuable consideration, the parties agree as follows:</p>
+
+        <h4>1. Definitions.</h4>
+        <p class="sub-p">1.1 "Affiliate" means (a) any person or entity directly or indirectly controlled by, controlling or under common control with a party, and (b) any officer, director, management employee, or trustee of any such entity or a party.</p>
+        <p class="sub-p">1.2 "Confidential Information" means all Trade Secrets (as hereinafter defined), financial, technical, business, sales, marketing, and other information, including all copies thereof (including, without limitation, all agreements, files, books, logs, charts, records, studies, reports, surveys, schedules, plans, maps, statistical information, computer code and programs, technical and functional specifications, business plans, strategic plans, ideas, projections, and documentation) which may be or already has been furnished or disclosed to Recipient by, or acquired by Recipient directly or indirectly from, Provider or Provider's Affiliates, including as a result of an inspection of any facility or technology of Provider, its Affiliates, or either of their licensors, licensees, or customers, whether or not marked, designated, or otherwise identified as "confidential." Confidential Information also includes all memoranda, notes, reports, and documents relating to Confidential Information, all copies and extracts of Confidential Information, and all computer-generated studies and data containing Confidential Information prepared by or for the benefit of Recipient in connection with carrying out the Purpose.</p>
+        <p class="sub-p">1.3 "Trade Secrets" means any information, without regard to form, including, but not limited to, technical or nontechnical data, a formula, a pattern, a compilation, a program, a device, a method, a technique, a drawing, a process, financial data, financial plans, product plans, or a list of actual or potential customers or suppliers which is not commonly known by or available to the public and which information: (a) derives economic value, actual or potential, from not being generally known to, and not being readily ascertainable by proper means by, other persons who can obtain economic value from its disclosure or use; and (b) is the subject of efforts that are reasonable under the circumstances to maintain its secrecy, or such other meaning as shall be assigned to that term from time to time by applicable law.</p>
+
+        <h4>2. Restrictions.</h4>
+        <p class="sub-p">2.1 Confidential Information. Except as provided herein, during the period required to complete the Purpose and for a period of three (3) years thereafter:</p>
+        <p class="sub-p">(a) Recipient will protect and safeguard the confidentiality of all Confidential Information with at least the same degree of care as the Recipient would protect its own confidential information, but in no event with less than a commercially reasonable degree of care;</p>
+        <p class="sub-p">(b) Recipient and its Representatives may use the Confidential Information only for the Purpose and may not use the Confidential Information for any other reason without the express written consent of the Provider;</p>
+        <p class="sub-p">(c) Recipient hereby agrees not to circumvent the Provider to conduct business with any of Provider's clients without written consent from the Provider.</p>
+        <p class="sub-p">(d) Recipient will immediately notify the Provider upon discovery of any loss or unauthorized disclosure of the Confidential Information of the Provider; and</p>
+        <p class="sub-p">(e) Recipient shall not disclose or provide the Confidential Information to any third party, and may only disclose the Confidential Information to Recipients' Affiliates, officers, directors, partners, shareholders, agents, attorneys, accountants, consultants, potential debt and equity financing sources, lending institutions, representatives, employees, and advisors (collectively, such persons who receive Confidential Information from, or on behalf of, Recipient, "Representatives") who have a "need to know" such Confidential Information and are subject to legally binding confidentiality obligations relating to the use and disclosure of such Confidential Information at least as restrictive as those contained herein.</p>
+        <p class="sub-p">2.2 Trade Secrets. The terms of Section 2.1 which apply to Confidential Information shall apply to Trade Secrets for as long as they remain within the definition of Trade Secrets set forth in this Agreement. The three (3) year term set forth in Section 2.1 shall not apply to Trade Secrets.</p>
+        <p class="sub-p">2.3 Exceptions. This Agreement does not apply to any Confidential Information which:</p>
+        <p class="sub-p">(a) at the time of disclosure, is, or thereafter becomes, publicly available and known other than as a result of the fault or breach of the Recipient;</p>
+        <p class="sub-p">(b) was rightfully in the possession of Recipient, as established by documentary evidence, prior to Recipient's receipt of such Confidential Information, directly or indirectly, from Provider and/or Provider's Affiliates; or</p>
+        <p class="sub-p">(c) is acquired by Recipient from a third party who does not thereby breach an obligation of confidence to Provider and/or Provider's Affiliates and who discloses it to Recipient in good faith.</p>
+        <p class="sub-p">2.4 Legally Required Disclosure. Notwithstanding the foregoing, Recipient may disclose Confidential Information to the extent legally required by a final order of any court or administrative agency having competent jurisdiction, provided that Recipient immediately notifies Provider, allows Provider an opportunity to object to or block such disclosure, and cooperates with Provider to protect the confidentiality thereof by all means reasonably available, at Provider's expense.</p>
+
+        <h4>3. Return of Materials.</h4>
+        <p>Recipient shall destroy or return and deliver, or cause to be destroyed or returned and delivered, to Provider, all documentation, materials, media, objects, and other tangible items that contain Confidential Information immediately upon the completion of the Purpose if no definitive agreement for a business relationship has been reached, or otherwise immediately upon the written request of Provider. Upon Provider's request, Recipient agrees to certify it has completed such requested action. Notwithstanding the foregoing, Recipient and its Representatives: (a) shall not be required to return or destroy any Confidential Information to the extent that it is otherwise required by law, regulation, rule governing the Recipient's or its Representatives' professionals, or bona fide document retention policies; and (b) will not be obligated to erase any Confidential Information that is contained in any archived computer system backup in accordance with the Recipient's or its Representatives' security and/or disaster recovery procedures; provided that any retained Confidential Information shall remain subject to the terms hereof.</p>
+
+        <h4>4. Intellectual Property Ownership.</h4>
+        <p>Unless otherwise indicated, Provider is the owner of all right, title, and interest in and to the Confidential Information (including ownership of all copyrights, patent rights, and trade secrets pertaining thereto). Recipient agrees not to make any claim to or challenge any rights (including intellectual property rights) of or claimed by Provider or its Affiliates in or to the Confidential Information. No right or license in or to the Confidential Information are hereby granted to Recipient except as expressly stated herein.</p>
+
+        <h4>5. Warranty Disclaimer.</h4>
+        <p>No warranty is made to any person hereby regarding the accuracy, completeness, condition, suitability, or performance of the Confidential Information.</p>
+
+        <h4>6. No Obligation.</h4>
+        <p>Neither party shall be under any legal obligation of any kind whatsoever with respect to the proposed transaction except for the matters specifically agreed to in this Agreement. Recipient understands that nothing herein requires the disclosure of any Confidential Information of Provider and that such Confidential Information shall be disclosed, if at all, solely at the option of Provider.</p>
+
+        <h4>7. Remedies.</h4>
+        <p>All Confidential Information is, at all times and for all purposes, deemed to have been acquired and is to be held by Recipient in a fiduciary capacity and solely for the benefit of Provider. The unauthorized use or disclosure of any Confidential Information by Recipient will cause severe and irreparable damage to Provider and/or Provider's Affiliates. In the event of any violation of this Agreement, Recipient agrees that Provider will be authorized and entitled to obtain from any court of competent jurisdiction preliminary and/or permanent injunctive relief, as well as any other relief permitted by applicable law; and the parties hereby waive any requirement for the securing or posting of any bond or the showing of actual monetary damages in connection with such claim.</p>
+
+        <h4>8. Choice of Law; Venue.</h4>
+        <p>This Agreement is governed by and construed in accordance with the laws of the State of Delaware. Venue for any dispute will be in the state and federal courts located in the Fifth Judicial District of Georgia.</p>
+
+        <h4>9. Entire Agreement.</h4>
+        <p>This Agreement contains the entire agreement of the parties regarding the subject matter hereof and supersedes all other prior agreements, whether written or oral, regarding such subject matter. This Agreement may be changed only by an instrument in writing executed by both parties.</p>
+
+        <h4>10. No Waivers.</h4>
+        <p>No failure or delay by a party hereto in enforcing any right, power, or privilege created hereunder will operate as an implied waiver thereof, nor will any single or partial enforcement thereof preclude any other or further enforcement thereof or the enforcement of any other right, power, or privilege.</p>
+
+        <h4>11. Assignment.</h4>
+        <p>This Agreement inures to the benefit of each party and its successors and assigns. To the extent Provider discloses, or provides for the disclosure of, Confidential Information of the Provider's Affiliate, such Affiliate will be a third-party beneficiary with respect to the confidentiality provisions of this Agreement and will be entitled to enforce such provisions as its interests may warrant.</p>
+
+        <p class="lead">By electronically signing, you, the recipient, are agreeing to all of the terms and conditions of this agreement.</p>
+      </div>
+      <div class="nda-ver">Nectar Form of One-Way NDA — reference key v1_2026-06</div>
+      <button type="button" id="nda-agree">I Agree and Sign</button>
+      <p class="helper">By clicking, you agree to the terms above. Your name, email, and signing time will be recorded electronically. A magic link will be sent to your email.</p>
+      <div class="err" id="nda-error"></div>
+      <button type="button" id="nda-back" class="linklike">&larr; Back</button>
+    </div>
+
+    <!-- Step 4c: confirmation -->
+    <div class="login-step hidden" data-step="done">
+      <h1>Check your email</h1>
+      <div class="ok">We sent a secure sign-in link to <strong id="login-done-email"></strong>.<br>The link expires in 1 hour.</div>
+    </div>
   </div>
 </div>
 
@@ -1393,10 +1486,8 @@ body.tier-1 .tier-1-cta {
       <a href="#" onclick="showSec('fit');return false;" id="nd-fit">Is This Right For You?</a>
     </div>
   </div>
-  <div id="logout-control" class="hidden">
-    <span id="logout-email"></span>
-    <button type="button" id="logout-btn">Log out</button>
-  </div>
+  <!-- "Request Full Access" CTA removed. Sign-in is the page gate (see
+       #login-overlay), so there is no topnav sign-in trigger. -->
   <button id="navToggle" class="nav-toggle" type="button" aria-label="Menu" aria-expanded="false" style="display:none">
     <span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span><span class="nav-toggle-bar"></span>
   </button>
@@ -2993,109 +3084,49 @@ function showOverlayError(message) {
   overlay.classList.remove("hidden");
 }
 
-// ── Auth gate (Supabase magic link, any email) ──────────────────────────────
-// The dashboard is gated behind a Supabase session. Any email may request a
-// magic link — there is no allowlist. The portfolio RPC (get_pmt_data) now
-// requires authentication, so data loading happens ONLY after we have a
-// session; it is never called on the unauthenticated initial load.
+// ── Bootstrap (gated behind sign-in) ───────────────────────────────────────
+// Content is not loaded or revealed until the visitor is authenticated. An
+// unauthenticated visitor gets the non-dismissible #login-overlay instead. The
+// Supabase RPC `get_pmt_data` must permit the authenticated role server-side.
 async function waitForSupabase(timeoutMs = 5000) {
   const start = Date.now();
   while (!window.supabase) {
     if (Date.now() - start > timeoutMs) {
-      throw new Error("Authentication library failed to load. Check your network and reload.");
+      throw new Error("Supabase library failed to load. Check your network and reload.");
     }
     await new Promise(r => setTimeout(r, 50));
   }
 }
 
-// ── Auth UI helpers ──
-function showLoginScreen() {
-  document.getElementById("pmt-loading-overlay")?.classList.add("hidden");
-  document.getElementById("login-overlay")?.classList.remove("hidden");
-  document.getElementById("logout-control")?.classList.add("hidden");
-}
-
-function hideLoginScreen() {
-  document.getElementById("login-overlay")?.classList.add("hidden");
-}
-
-function showLogoutControl(email) {
-  const ctl = document.getElementById("logout-control");
-  if (!ctl) return;
-  const span = document.getElementById("logout-email");
-  if (span) span.textContent = email || "";
-  ctl.classList.remove("hidden");
-}
-
-async function handleLoginSubmit(e) {
-  e.preventDefault();
-  const emailInput = document.getElementById("login-email");
-  const submit = document.getElementById("login-submit");
-  const statusEl = document.getElementById("login-status");
-  const email = (emailInput?.value || "").trim().toLowerCase();
-  statusEl.className = "login-status";
-  statusEl.textContent = "";
-  // Basic (not strict) client-side format check before hitting the server.
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    statusEl.classList.add("err");
-    statusEl.textContent = "Please enter a valid email address.";
+let _authListenerWired = false;
+async function bootstrap() {
+  try {
+    await waitForSupabase();
+  } catch (err) {
+    showOverlayError(err.message);
     return;
   }
-  submit.disabled = true;
-  submit.textContent = "Sending…";
-  try {
-    const { error } = await window.supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.origin + window.location.pathname },
+
+  // Wire the auth listener once, before any early return, so that completing a
+  // magic-link sign-in (in this tab or another) reveals content without a
+  // manual reload.
+  if (!_authListenerWired) {
+    _authListenerWired = true;
+    window.supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        const ov = document.getElementById("login-overlay");
+        if (ov && !ov.classList.contains("hidden")) bootstrap();
+      }
     });
-    if (error) throw error;
-    statusEl.classList.add("ok");
-    statusEl.textContent = "We sent a login link to your email. Click it to access the dashboard.";
-  } catch (err) {
-    // Surface Supabase's message plainly (rate limits, malformed email, etc.).
-    statusEl.classList.add("err");
-    statusEl.textContent = err.message || "Something went wrong. Please try again.";
-    submit.disabled = false;
-    submit.textContent = "Send login link";
   }
-}
 
-async function handleSignOut(e) {
-  if (e) e.preventDefault();
-  try {
-    await window.supabase.auth.signOut();
-  } catch (err) {
-    console.error("Sign out failed:", err);
+  // Gate: no session → show the sign-in overlay and load nothing.
+  const { data: { session } } = await window.supabase.auth.getSession();
+  if (!session) {
+    showLogin();
+    return;
   }
-  // The onAuthStateChange SIGNED_OUT handler refreshes the UI to the login screen.
-}
-
-let _authWired = false;
-function wireAuthOnce() {
-  if (_authWired) return;
-  _authWired = true;
-  document.getElementById("login-form")?.addEventListener("submit", handleLoginSubmit);
-  document.getElementById("logout-btn")?.addEventListener("click", handleSignOut);
-  // Toggle between login screen and dashboard whenever auth state changes.
-  // A magic-link click lands here as a SIGNED_IN event (the Supabase client
-  // auto-detects the tokens in the URL hash — no custom parsing needed).
-  window.supabase.auth.onAuthStateChange((event, session) => {
-    if (event === "SIGNED_IN" && session) {
-      if (!_dashboardLoaded) loadDashboard(session);
-    } else if (event === "SIGNED_OUT") {
-      _dashboardLoaded = false;
-      showLoginScreen();
-    }
-  });
-}
-
-// ── Dashboard data load (gated behind an authenticated session) ──
-let _dashboardLoaded = false;
-async function loadDashboard(session) {
-  if (_dashboardLoaded) return;
-  _dashboardLoaded = true;
-  hideLoginScreen();
-  showLogoutControl(session?.user?.email);
+  hideLogin();
 
   const overlay = document.getElementById("pmt-loading-overlay");
   if (overlay) {
@@ -3128,28 +3159,8 @@ async function loadDashboard(session) {
     hideOverlay();
   } catch (err) {
     console.error("Failed to load PMT_DATA:", err);
-    _dashboardLoaded = false;
     showOverlayError(err.message || "Unknown error");
   }
-}
-
-async function bootstrap() {
-  try {
-    await waitForSupabase();
-  } catch (err) {
-    showOverlayError(err.message);
-    return;
-  }
-  wireAuthOnce();
-
-  // No session → show the login screen and stop. Do NOT call the RPC.
-  const { data: { session } } = await window.supabase.auth.getSession();
-  if (!session) {
-    showLoginScreen();
-    return;
-  }
-  // Existing session → straight into the dashboard.
-  await loadDashboard(session);
 }
 
 if (document.readyState === "loading") {
@@ -3157,6 +3168,171 @@ if (document.readyState === "loading") {
 } else {
   bootstrap();
 }
+
+// ── Investor sign-in flow (page gate) ───────────────────────────────────────
+// name/email → has_signed_nda? (skip NDA if true) → NDA one-click sign →
+// record_nda_signing (must succeed) → signInWithOtp → "check your email".
+// NDA text lives in the DOM; only this version key is a server reference.
+const NDA_VERSION = "v1_2026-06";
+const NDA_MONTHS = ["January","February","March","April","May","June","July",
+  "August","September","October","November","December"];
+
+function ndaValidEmail(v) {
+  // Must contain @ and a dot somewhere in the domain.
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((v || "").trim());
+}
+function ndaValidName(v) {
+  // >= 2 chars after trim, and at least two words (first + last minimum).
+  const t = (v || "").trim();
+  return t.length >= 2 && t.split(/\s+/).filter(Boolean).length >= 2;
+}
+function ndaToday() {
+  const d = new Date();
+  return `${NDA_MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
+function loginShowStep(step) {
+  document.querySelectorAll("#login-overlay .login-step").forEach(el => {
+    el.classList.toggle("hidden", el.dataset.step !== step);
+  });
+}
+function showLogin() {
+  const ov = document.getElementById("login-overlay");
+  if (!ov) return;
+  document.getElementById("pmt-loading-overlay")?.classList.add("hidden");
+  // Only reset to Step 1 if we aren't mid-flow (e.g. showing "check your
+  // email"); a re-entrant bootstrap shouldn't wipe a completed submission.
+  if (ov.classList.contains("hidden")) {
+    loginShowStep("form");
+    loginValidateForm();
+  }
+  ov.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+  setTimeout(() => document.getElementById("login-name")?.focus(), 30);
+}
+function hideLogin() {
+  document.getElementById("login-overlay")?.classList.add("hidden");
+  document.body.style.overflow = "";
+}
+
+function loginValidateForm() {
+  const nameEl = document.getElementById("login-name");
+  const emailEl = document.getElementById("login-email");
+  const cont = document.getElementById("login-continue");
+  if (!nameEl || !emailEl || !cont) return false;
+  const nameOk = ndaValidName(nameEl.value);
+  const emailOk = ndaValidEmail(emailEl.value);
+  // Only surface an inline error once the field has content.
+  document.getElementById("login-name-error").textContent =
+    (nameEl.value.trim() && !nameOk) ? "Enter your first and last name." : "";
+  document.getElementById("login-email-error").textContent =
+    (emailEl.value.trim() && !emailOk) ? "Enter a valid email address." : "";
+  cont.disabled = !(nameOk && emailOk);
+  return nameOk && emailOk;
+}
+
+async function loginContinue() {
+  if (!loginValidateForm()) return;
+  const email = document.getElementById("login-email").value.trim();
+  const fullName = document.getElementById("login-name").value.trim();
+  const cont = document.getElementById("login-continue");
+  const formErr = document.getElementById("login-form-error");
+  formErr.textContent = "";
+  const label = cont.textContent;
+  cont.disabled = true;
+  cont.textContent = "Checking…";
+  try {
+    await waitForSupabase();
+    const { data, error } = await window.supabase.rpc("has_signed_nda", { p_email: email });
+    if (error) throw error;
+    if (data === true) {
+      // NDA already on file — skip the display and go straight to Step 4.
+      await loginFinish(email, fullName, "form");
+    } else {
+      loginPrepareNda(fullName, email);
+      loginShowStep("nda");
+    }
+  } catch (err) {
+    formErr.textContent = (err && err.message) || "Something went wrong. Please try again.";
+    cont.disabled = false;
+    cont.textContent = label;
+  }
+}
+
+function loginPrepareNda(fullName, email) {
+  document.getElementById("nda-recipient").textContent = `${fullName} · ${email}`;
+  document.getElementById("nda-date").textContent = ndaToday();
+  const agree = document.getElementById("nda-agree");
+  agree.disabled = false;
+  agree.textContent = "I Agree and Sign";
+  document.getElementById("nda-error").textContent = "";
+  document.querySelector("#login-overlay .nda-body")?.scrollTo(0, 0);
+}
+
+function loginAgree() {
+  const email = document.getElementById("login-email").value.trim();
+  const fullName = document.getElementById("login-name").value.trim();
+  loginFinish(email, fullName, "nda");
+}
+
+// Step 4: record the signing (must succeed), then send the magic link.
+async function loginFinish(email, fullName, fromStep) {
+  const errEl = document.getElementById(fromStep === "nda" ? "nda-error" : "login-form-error");
+  const btn = document.getElementById(fromStep === "nda" ? "nda-agree" : "login-continue");
+  const label = btn.textContent;
+  errEl.textContent = "";
+  btn.disabled = true;
+  btn.textContent = "Signing…";
+  try {
+    await waitForSupabase();
+    // 4a — record the NDA signing. Do not proceed if this fails.
+    const { data: recorded, error: recErr } = await window.supabase.rpc("record_nda_signing", {
+      p_email: email,
+      p_full_name: fullName,
+      p_user_agent: navigator.userAgent,
+    });
+    if (recErr) throw recErr;
+    if (recorded === false) {
+      throw new Error("We couldn't record your signature. Please try again, or contact Nectar.");
+    }
+    // 4b — send the magic link.
+    btn.textContent = "Sending…";
+    const { error: otpErr } = await window.supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.origin + window.location.pathname },
+    });
+    if (otpErr) throw otpErr;
+    // 4c — confirmation.
+    document.getElementById("login-done-email").textContent = email;
+    loginShowStep("done");
+  } catch (err) {
+    const msg = (err && err.message) ? err.message : "";
+    // Graceful fallback when Supabase Auth has signups disabled / is misconfigured.
+    if (/signups?\s+not\s+allowed|signup.*disabled|otp_disabled/i.test(msg)) {
+      errEl.textContent = "This email isn't provisioned for access yet. Please contact Nectar to be added.";
+    } else {
+      errEl.textContent = msg || "Something went wrong. Please try again.";
+    }
+    btn.disabled = false;
+    btn.textContent = label;
+  }
+}
+
+(function wireLoginOnce() {
+  const run = () => {
+    // The gate is not dismissible: no close button, no backdrop close, no Esc.
+    document.getElementById("login-name")?.addEventListener("input", loginValidateForm);
+    document.getElementById("login-email")?.addEventListener("input", loginValidateForm);
+    document.getElementById("login-form")?.addEventListener("submit", (e) => { e.preventDefault(); loginContinue(); });
+    document.getElementById("nda-agree")?.addEventListener("click", loginAgree);
+    document.getElementById("nda-back")?.addEventListener("click", () => loginShowStep("form"));
+  };
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", run);
+  } else {
+    run();
+  }
+})();
 
 // Payments are tracked per calendar month (not against a fixed due date).
 function formatPaymentMonth(monthStr) {
