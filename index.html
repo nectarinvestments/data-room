@@ -2752,7 +2752,7 @@ body.tier-1 .tier-1-cta {
     <div class="logo">nectar <span>Investor Data Room</span></div>
   </div>
   <div class="header-right">
-    As of April 2026 &nbsp;|&nbsp; Confidential — For Qualified Investors Only<br>
+    Data as of <span class="data-as-of">June 30, 2026</span> &nbsp;|&nbsp; Confidential — For Qualified Investors Only<br>
     RE Nectar Inc. &nbsp;|&nbsp; <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3c48595d517c494f5952595f485d4e125f5351">[email&#160;protected]</a>
   </div>
 </header>
@@ -2822,6 +2822,11 @@ body.tier-1 .tier-1-cta {
       <button type="button" class="pill"        data-sub="Closed - Workout"                onclick="setSubStatus('Closed - Workout')">Workout</button>
       <button type="button" class="pill"        data-sub="Charged Off (Loss)"              onclick="setSubStatus('Charged Off (Loss)')">Charged Off</button>
     </div>
+  </div>
+
+  <!-- REPORTING DATE -->
+  <div class="data-as-of-note" style="font-size:11px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin:0 0 8px 2px">
+    Data as of <span class="data-as-of">June 30, 2026</span>
   </div>
 
   <!-- KPI STRIP -->
@@ -3043,7 +3048,7 @@ body.tier-1 .tier-1-cta {
 <footer>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
     <div style="display:flex;align-items:center;gap:12px"><span style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;color:#971BFF;opacity:0.5">nectar</span></div>
-    <div style="font-size:11px;color:var(--dim);letter-spacing:.02em">Confidential — For Accredited Investors Only &nbsp;·&nbsp; Data as of April 2026</div>
+    <div style="font-size:11px;color:var(--dim);letter-spacing:.02em">Confidential — For Accredited Investors Only &nbsp;·&nbsp; Data as of <span class="data-as-of">June 30, 2026</span></div>
   </div> Past performance is not indicative of future results.
 </footer>
 
@@ -3401,20 +3406,15 @@ function getUnitCount(dealId) {
 // it dynamic.
 const OBS_DATE = new Date(Date.UTC(2026, 3, 22));
 
-// Payment History display cutoff: only show months whose books are fully
-// closed. Rule (per Walker): hide any month later than "current calendar
-// month minus 2." Rolls forward automatically — e.g. June 2026 → "2026-04"
-// (Apr and earlier visible); July 1 2026 → "2026-05". This affects ONLY what
-// the Payment History table/modal preview render; it does NOT touch
-// total_collected / MOIC, which always reflect all cash collected.
-function computeObsMonthStr() {
-  const now = new Date();
-  const cutoff = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-  const yyyy = cutoff.getFullYear();
-  const mm = String(cutoff.getMonth() + 1).padStart(2, '0');
-  return `${yyyy}-${mm}`;
-}
-const OBS_MONTH_STR = computeObsMonthStr();
+// Reporting ceiling. All reporting is pinned to a June 30, 2026 as-of date
+// (matches backend private.data_as_of()). DATA_AS_OF_MONTH is the latest
+// month whose books are closed and therefore the newest month the Payment
+// History table/modal preview will display; DATA_AS_OF_LABEL is the
+// human-readable form shown to investors. This affects ONLY what the Payment
+// History table/modal preview render; it does NOT touch OBS_DATE / DPD math
+// or total_collected / MOIC, which always reflect all cash collected.
+const DATA_AS_OF_MONTH = "2026-06";   // reporting ceiling; matches backend private.data_as_of()
+const DATA_AS_OF_LABEL = "June 30, 2026";
 
 // ── RAW DATA ────────────────────────────────────────────────────────────────
 // Source of truth for the Tier 2 (full) render path. INLINE in the HTML —
@@ -5815,10 +5815,10 @@ function openOP(deal) {
 
   // Payment history (last 6 months, sourced from PMT_DATA.dpd)
   const dpdArr = PMT_DATA.dpd[deal.id] || [];
-  // Only show months whose books are fully closed (current month minus 2),
-  // matching the deal-detail Payment History table. See computeObsMonthStr.
+  // Only show months whose books are fully closed (through the reporting
+  // ceiling), matching the deal-detail Payment History table. See DATA_AS_OF_MONTH.
   const visible = dpdArr
-    .filter(r => r.month_str && r.month_str <= OBS_MONTH_STR)
+    .filter(r => r.month_str && r.month_str <= DATA_AS_OF_MONTH)
     .sort((a, b) => (a.pmt_num || 0) - (b.pmt_num || 0));
   // Post-term display: end of regular schedule is the highest pmt_num with
   // sched_amt > 0. Keep all in-term rows; keep post-term rows ONLY when
@@ -6723,6 +6723,8 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   const track = document.getElementById('sec-track');
   if (track) { track.style.display = 'block'; track.classList.add('ds-active'); }
+  // Reporting date label — single source of truth is DATA_AS_OF_LABEL.
+  document.querySelectorAll('.data-as-of').forEach(el => { el.textContent = DATA_AS_OF_LABEL; });
 });
 
 
@@ -6815,7 +6817,7 @@ function renderDealDetail(lid) {
 
   // Chart
   const chartId = 'chartDealDetail';
-  const pastRows = dpdArr.filter(r => r.month_str && r.month_str <= OBS_MONTH_STR);
+  const pastRows = dpdArr.filter(r => r.month_str && r.month_str <= DATA_AS_OF_MONTH);
   // Post-term display: drop gap rows past the last scheduled payment that
   // have no actual payment, but keep recovery rows. See openOP for the
   // long-form rationale; same rule applies to chart and table here so they
