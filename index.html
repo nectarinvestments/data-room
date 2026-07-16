@@ -5324,34 +5324,17 @@ function syncClosedKpiCards() {
   if (!c3 || !c4 || !c5) return;
 
   if (statusFilter === 'Closed') {
-    // Narrow the closed book to the active sub-status bucket (a close_type
-    // string, or 'all' for the whole closed book), then recompute the cards
-    // against just that slice. subStatusFilter is already kept in sync by
-    // setSubStatus → applyFilters → renderKPIs → here.
-    const tape = (PMT_DATA && PMT_DATA.tape) ? PMT_DATA.tape : [];
-    const dpd  = (PMT_DATA && PMT_DATA.dpd)  ? PMT_DATA.dpd  : {};
-    let closed = tape.filter(t => t.status === 'Closed' && t.id !== 'LP-123');
-    if (subStatusFilter && subStatusFilter !== 'all') {
-      closed = closed.filter(t => (t.close_type || null) === subStatusFilter);
-    }
-    const scope = (subStatusFilter && subStatusFilter !== 'all') ? subStatusFilter : 'all closed deals';
-    const m = computeClosedMetrics(closed, dpd);
-
-    document.getElementById('kpiC3Label').textContent = 'Realized IRR';
-    document.getElementById('kpiOutstanding').textContent = m.realizedIrr == null ? '—' : m.realizedIrr.toFixed(1) + '%';
-    document.getElementById('kpiOutPct').textContent = 'Closed book · advance-weighted';
-    c3.title = `Realized IRR — capital-weighted average of each deal’s actual annualized return across ${scope}, so larger positions count more.`;
-
-    document.getElementById('kpiC4Label').textContent = 'MOIC';
-    document.getElementById('kpiDSCR').textContent = m.moic == null ? '—' : m.moic.toFixed(2) + 'x';
-    document.getElementById('kpiC4Sub').textContent = 'Total collected ÷ deployed';
-    c4.title = `MOIC — every dollar collected divided by every dollar deployed across ${scope}.`;
-
-    document.getElementById('kpiC5Label').textContent = 'Wtd. Avg. Duration';
-    document.getElementById('kpiLTV').textContent = m.weightedAvgDuration == null ? '—' : m.weightedAvgDuration.toFixed(1) + ' months';
-    document.getElementById('kpiC5Sub').textContent = 'Advance-weighted hold';
-    c5.title = `Weighted-average duration — months from first scheduled payment to deal close across ${scope}, weighted by capital deployed.`;
+    // Closed view: hide the repurposed IRR/MOIC/Duration cards entirely, so the
+    // KPI strip shows only Total Deployed + Total Collected. (The closed-book
+    // metrics are no longer surfaced here; computeClosedMetrics remains defined
+    // above but is intentionally uncalled.)
+    c3.style.display = 'none';
+    c4.style.display = 'none';
+    c5.style.display = 'none';
   } else {
+    c3.style.display = '';
+    c4.style.display = '';
+    c5.style.display = '';
     document.getElementById('kpiC3Label').textContent = 'Outstanding Principal';
     document.getElementById('kpiC4Label').textContent = 'Avg DSCR';
     document.getElementById('kpiC4Sub').textContent = 'performing book';
