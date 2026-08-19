@@ -2752,7 +2752,7 @@ body.tier-1 .tier-1-cta {
     <div class="logo">nectar <span>Investor Data Room</span></div>
   </div>
   <div class="header-right">
-    Data as of <span class="data-as-of">June 30, 2026</span> &nbsp;|&nbsp; Confidential — For Qualified Investors Only<br>
+    Data as of <span class="data-as-of">July 31, 2026</span> &nbsp;|&nbsp; Confidential — For Qualified Investors Only<br>
     RE Nectar Inc. &nbsp;|&nbsp; <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3c48595d517c494f5952595f485d4e125f5351">[email&#160;protected]</a>
   </div>
 </header>
@@ -2826,7 +2826,7 @@ body.tier-1 .tier-1-cta {
 
   <!-- REPORTING DATE -->
   <div class="data-as-of-note" style="font-size:11px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin:0 0 8px 2px">
-    Data as of <span class="data-as-of">June 30, 2026</span>
+    Data as of <span class="data-as-of">July 31, 2026</span>
   </div>
 
   <!-- KPI STRIP -->
@@ -3048,7 +3048,7 @@ body.tier-1 .tier-1-cta {
 <footer>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
     <div style="display:flex;align-items:center;gap:12px"><span style="font-family:'Manrope',sans-serif;font-size:16px;font-weight:700;color:#971BFF;opacity:0.5">nectar</span></div>
-    <div style="font-size:11px;color:var(--dim);letter-spacing:.02em">Confidential — For Accredited Investors Only &nbsp;·&nbsp; Data as of <span class="data-as-of">June 30, 2026</span></div>
+    <div style="font-size:11px;color:var(--dim);letter-spacing:.02em">Confidential — For Accredited Investors Only &nbsp;·&nbsp; Data as of <span class="data-as-of">July 31, 2026</span></div>
   </div> Past performance is not indicative of future results.
 </footer>
 
@@ -3070,6 +3070,21 @@ async function loadPmtData() {
     throw new Error(`Supabase RPC error: ${error.message}`);
   }
   return data;
+}
+
+// Reporting ceiling from the backend (private.data_as_of()). Returns
+// { as_of_date, as_of_month, as_of_label }. Callers treat a failure as
+// non-fatal and fall back to the hardcoded DATA_AS_OF_* values.
+async function loadDataAsOf() {
+  if (!window.supabase) {
+    throw new Error("Supabase client not initialized");
+  }
+  const { data, error } = await window.supabase.rpc("get_data_as_of");
+  if (error) {
+    throw new Error(`Supabase RPC error: ${error.message}`);
+  }
+  // Tolerate either a bare object or a single-row set.
+  return Array.isArray(data) ? data[0] : data;
 }
 
 function hideOverlay() {
@@ -3142,11 +3157,22 @@ async function bootstrap() {
     `;
   }
   try {
-    PMT_DATA = await loadPmtData();
+    const [pmtData, asOf] = await Promise.all([
+      loadPmtData(),
+      // Non-fatal: a failure here just leaves the DATA_AS_OF_* fallbacks in place.
+      loadDataAsOf().catch(err => {
+        console.warn("get_data_as_of failed; using fallback reporting date:", err);
+        return null;
+      })
+    ]);
+    PMT_DATA = pmtData;
     if (!PMT_DATA || !Array.isArray(PMT_DATA.tape)) {
       showOverlayError("Portfolio data is unavailable. Please try again.");
       return;
     }
+    // Adopt the reporting ceiling before any render reads DATA_AS_OF_MONTH,
+    // and repaint the .data-as-of labels with the fetched value.
+    applyDataAsOf(asOf);
     // Tier resolution from the RPC response. Missing tier → Tier 2 (full).
     window.NC_TIER = (PMT_DATA && PMT_DATA.tier != null) ? PMT_DATA.tier : 2;
     document.body.classList.remove("tier-0", "tier-1", "tier-2");
@@ -3406,15 +3432,35 @@ function getUnitCount(dealId) {
 // it dynamic.
 const OBS_DATE = new Date(Date.UTC(2026, 3, 22));
 
-// Reporting ceiling. All reporting is pinned to a June 30, 2026 as-of date
-// (matches backend private.data_as_of()). DATA_AS_OF_MONTH is the latest
-// month whose books are closed and therefore the newest month the Payment
-// History table/modal preview will display; DATA_AS_OF_LABEL is the
-// human-readable form shown to investors. This affects ONLY what the Payment
-// History table/modal preview render; it does NOT touch OBS_DATE / DPD math
-// or total_collected / MOIC, which always reflect all cash collected.
-const DATA_AS_OF_MONTH = "2026-06";   // reporting ceiling; matches backend private.data_as_of()
-const DATA_AS_OF_LABEL = "June 30, 2026";
+// Reporting ceiling. Fetched at bootstrap from the backend RPC
+// `get_data_as_of` (which reads private.data_as_of()), so it never goes stale.
+// DATA_AS_OF_MONTH is the latest month whose books are closed and therefore
+// the newest month the Payment History table/modal preview will display;
+// DATA_AS_OF_LABEL is the human-readable form shown to investors. This affects
+// ONLY what the Payment History table/modal preview render; it does NOT touch
+// OBS_DATE / DPD math or total_collected / MOIC, which always reflect all cash
+// collected.
+//
+// The values below are fallbacks, used only if the RPC fails; applyDataAsOf()
+// overwrites them with the server's response during bootstrap.
+let DATA_AS_OF_MONTH = "2026-07";
+let DATA_AS_OF_LABEL = "July 31, 2026";
+
+// Paints every .data-as-of span (header, sub-header, footer) from the current
+// DATA_AS_OF_LABEL. Safe to call more than once.
+function renderDataAsOfLabels() {
+  document.querySelectorAll('.data-as-of').forEach(el => { el.textContent = DATA_AS_OF_LABEL; });
+}
+
+// Adopts the get_data_as_of() response, then repaints the labels. A null or
+// partial response leaves the fallbacks in place.
+function applyDataAsOf(asOf) {
+  if (asOf) {
+    if (asOf.as_of_month) DATA_AS_OF_MONTH = asOf.as_of_month;
+    if (asOf.as_of_label) DATA_AS_OF_LABEL = asOf.as_of_label;
+  }
+  renderDataAsOfLabels();
+}
 
 // ── RAW DATA ────────────────────────────────────────────────────────────────
 // Source of truth for the Tier 2 (full) render path. INLINE in the HTML —
@@ -6706,8 +6752,10 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   const track = document.getElementById('sec-track');
   if (track) { track.style.display = 'block'; track.classList.add('ds-active'); }
-  // Reporting date label — single source of truth is DATA_AS_OF_LABEL.
-  document.querySelectorAll('.data-as-of').forEach(el => { el.textContent = DATA_AS_OF_LABEL; });
+  // Reporting date label — single source of truth is DATA_AS_OF_LABEL. At this
+  // point that may still be the fallback; bootstrap() calls applyDataAsOf()
+  // once get_data_as_of resolves, which repaints these spans.
+  renderDataAsOfLabels();
 });
 
 
