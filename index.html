@@ -3170,6 +3170,9 @@ async function bootstrap() {
       showOverlayError("Portfolio data is unavailable. Please try again.");
       return;
     }
+    // Add any tape deals missing from the hand-maintained RAW literal before
+    // anything renders, so they appear under All Portfolio like every other deal.
+    hydratePortfolioFromTape();
     // Tier resolution from the RPC response. Missing tier → Tier 2 (full).
     window.NC_TIER = (PMT_DATA && PMT_DATA.tier != null) ? PMT_DATA.tier : 2;
     document.body.classList.remove("tier-0", "tier-1", "tier-2");
@@ -5085,6 +5088,107 @@ const RAW_PLUS_FUND2 = (() => {
     }));
   return [...RAW, ...synthetic];
 })();
+
+// ── TAPE → PORTFOLIO HYDRATION ────────────────────────────────────────────
+// RAW is a hand-maintained literal and drifts behind the database: any deal
+// funded after RAW was last edited exists in the tape but has no RAW row, so
+// the Tier 2 table, KPIs and charts silently omit it. Rather than re-adding
+// rows by hand every close, synthesize a RAW-shaped row from the tape for each
+// tape deal RAW does not already carry. Existing RAW rows always win, so this
+// only ever ADDS deals — it never rewrites curated values.
+//
+// Called from bootstrap() once PMT_DATA is populated and before initApp(), and
+// mutates RAW / RAW_PLUS_FUND2 in place so every downstream consumer
+// (applyFilters, KPIs, charts, renderCumFunding, openOP) picks the deals up
+// unchanged.
+
+// "2026-02" -> "2026-01". The deals table has no funding-date column, so
+// fundDate is derived as the first scheduled payment month minus one. Measured
+// against the 15 most recently curated RAW rows this is exact for 11 and one
+// month early for 4 (both 2026 rows are exact); accuracy degrades on older
+// vintages, where amended schedules make the first scheduled month unreliable.
+// fundDate only drives display text and the month a deal lands in on the cash
+// flow / cumulative funding charts — vintage, advance and collected all come
+// from the tape directly, so KPIs and the vintage filter are unaffected.
+// Parsed by hand rather than by regex so the "YYYY-MM" shape is checked
+// explicitly.
+function monthBefore(monthStr) {
+  const parts = String(monthStr == null ? '' : monthStr).split('-');
+  if (parts.length !== 2) return null;
+  const y = Number(parts[0]), mo = Number(parts[1]);
+  if (!Number.isInteger(y) || !Number.isInteger(mo) || mo < 1 || mo > 12) return null;
+  const m = mo - 1;
+  return m < 1 ? (y - 1) + '-12' : y + '-' + String(m).padStart(2, '0');
+}
+
+// A tape row is portfolio-renderable only if the Track Record UI can actually
+// represent it: it needs a vintage and an advance to size the position, and a
+// status the table knows how to label. RAW carries only Open and Closed, and
+// renderTable labels anything that is not Closed as "Open" — so a Workout
+// position would be shown as Open rather than merely looking sparse. Rows that
+// fail this test are logged by hydratePortfolioFromTape(), never dropped in
+// silence.
+const PORTFOLIO_STATUSES = new Set(['Open', 'Closed']);
+function portfolioSkipReason(t) {
+  if (t.vintage == null) return 'no vintage';
+  if (t.advance == null || !(Number(t.advance) > 0)) return 'no advance';
+  if (!PORTFOLIO_STATUSES.has(t.status)) return 'status "' + t.status + '" is not rendered by the deal table';
+  return null;
+}
+
+function tapeToPortfolioRow(t) {
+  const id = String(t.id);
+  const sched = (PMT_DATA.sched && PMT_DATA.sched[id]) || [];
+  const first = sched[0] || null;
+  const num = v => (v == null ? null : Number(v));
+  // renderCashFlow does d.fundDate.split('-'), so this must always be a
+  // "YYYY-MM" string — fall back to January of the vintage year.
+  const fundDate = monthBefore(first && first.month_str) ||
+                   (t.vintage ? t.vintage + '-01' : '');
+  return {
+    id,
+    name:        t.name || ('Deal ' + id),
+    asset:       t.asset_type || '',
+    type:        t.fin_type || '',
+    vintage:     t.vintage != null ? Number(t.vintage) : null,
+    advance:     num(t.advance) ?? 0,
+    collected:   num(t.total_collected) ?? num(t.collected) ?? 0,
+    outstanding: num(t.opb) ?? 0,
+    monthlyPmt:  first && first.sched_amt != null ? Number(first.sched_amt) : 0,
+    irr:         num(t.proj_irr) ?? 0,
+    ltv:         num(t.ltv) ?? 0,
+    dscr:        num(t.dscr) ?? 0,
+    status:      t.status || 'Open',
+    term:        t.term_months != null ? Number(t.term_months) : null,
+    fundDate,
+    _fromTape:   true,
+  };
+}
+
+function hydratePortfolioFromTape() {
+  const known = new Set(RAW.map(d => d.id));
+  const added = [], skipped = [];
+  (PMT_DATA.tape || []).forEach(t => {
+    if (!t || t.id == null) return;
+    const id = String(t.id);
+    if (id === 'LP-123' || known.has(id)) return;
+    const reason = portfolioSkipReason(t);
+    if (reason) { skipped.push(id + ' (' + reason + ')'); return; }
+    known.add(id);
+    added.push(tapeToPortfolioRow(t));
+  });
+  if (skipped.length) {
+    console.warn('Tape deals the portfolio view cannot render, not added: ' + skipped.join(', '));
+  }
+  if (!added.length) return;
+  // Mutate in place. RAW_PLUS_FUND2 is a copy taken at parse time, so both
+  // arrays need the rows for the All Portfolio and Fund II paths to agree.
+  RAW.push(...added);
+  RAW_PLUS_FUND2.push(...added);
+  RAW.sort((x, y) => (parseInt(y.id) || 0) - (parseInt(x.id) || 0));
+  console.info('Hydrated ' + added.length + ' deal(s) present in the tape but absent from RAW: ' +
+               added.map(d => d.id).join(', '));
+}
 
 function isFund2Active() {
   const sel = document.getElementById('filterFund');
