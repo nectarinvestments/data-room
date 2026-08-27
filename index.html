@@ -3173,6 +3173,8 @@ async function bootstrap() {
     // Add any tape deals missing from the hand-maintained RAW literal before
     // anything renders, so they appear under All Portfolio like every other deal.
     hydratePortfolioFromTape();
+    // Report, without changing, any curated fundDate that disagrees with LoanPro.
+    auditCuratedFundDates();
     // Tier resolution from the RPC response. Missing tier → Tier 2 (full).
     window.NC_TIER = (PMT_DATA && PMT_DATA.tier != null) ? PMT_DATA.tier : 2;
     document.body.classList.remove("tier-0", "tier-1", "tier-2");
@@ -5102,14 +5104,23 @@ const RAW_PLUS_FUND2 = (() => {
 // (applyFilters, KPIs, charts, renderCumFunding, openOP) picks the deals up
 // unchanged.
 
-// "2026-02" -> "2026-01". The deals table has no funding-date column, so
-// fundDate is derived as the first scheduled payment month minus one. Measured
-// against the 15 most recently curated RAW rows this is exact for 11 and one
-// month early for 4 (both 2026 rows are exact); accuracy degrades on older
-// vintages, where amended schedules make the first scheduled month unreliable.
-// fundDate only drives display text and the month a deal lands in on the cash
-// flow / cumulative funding charts — vintage, advance and collected all come
-// from the tape directly, so KPIs and the vintage filter are unaffected.
+// "2026-05-08" -> "2026-05". The tape's funding_date is LoanPro's real
+// disbursement date, but fundDate is a "YYYY-MM" month key: renderCumFunding
+// buckets on it directly and matches it against generated month keys, and
+// renderCashFlow splits it into year/month. The day component is therefore
+// dropped here rather than changing that contract.
+function monthOf(dateStr) {
+  const parts = String(dateStr == null ? '' : dateStr).split('-');
+  if (parts.length < 2) return null;
+  const y = Number(parts[0]), mo = Number(parts[1]);
+  if (!Number.isInteger(y) || !Number.isInteger(mo) || mo < 1 || mo > 12) return null;
+  return y + '-' + String(mo).padStart(2, '0');
+}
+
+// "2026-02" -> "2026-01". Fallback for deals with no funding_date: assume the
+// first scheduled payment falls one month after funding. This rule is only a
+// last resort — measured against the 157 deals that now carry funding_date it
+// is wrong on 65 of them (41%), and 62 of those are exactly one month early.
 // Parsed by hand rather than by regex so the "YYYY-MM" shape is checked
 // explicitly.
 function monthBefore(monthStr) {
@@ -5141,9 +5152,12 @@ function tapeToPortfolioRow(t) {
   const sched = (PMT_DATA.sched && PMT_DATA.sched[id]) || [];
   const first = sched[0] || null;
   const num = v => (v == null ? null : Number(v));
-  // renderCashFlow does d.fundDate.split('-'), so this must always be a
-  // "YYYY-MM" string — fall back to January of the vintage year.
-  const fundDate = monthBefore(first && first.month_str) ||
+  // Real disbursement month from LoanPro when the tape carries it; the
+  // first-scheduled-month-minus-one guess only when it does not. renderCashFlow
+  // does d.fundDate.split('-'), so this must always end up a "YYYY-MM" string —
+  // fall back to January of the vintage year as a last resort.
+  const fundDate = monthOf(t.funding_date) ||
+                   monthBefore(first && first.month_str) ||
                    (t.vintage ? t.vintage + '-01' : '');
   return {
     id,
@@ -5163,6 +5177,30 @@ function tapeToPortfolioRow(t) {
     fundDate,
     _fromTape:   true,
   };
+}
+
+// Curated RAW rows keep their hand-written fundDate. Where a curated row and
+// LoanPro's funding_date disagree we cannot tell which is right from here, so
+// the mismatch is reported for a human to check and nothing is overwritten.
+// All 144 curated rows agreed at month precision when this was written, so in
+// practice this should stay silent — it exists to catch future drift.
+function auditCuratedFundDates() {
+  const byId = new Map((PMT_DATA.tape || []).map(t => [String(t.id), t]));
+  const mismatches = [];
+  RAW.forEach(d => {
+    if (d._fromTape || !d.fundDate) return;
+    const t = byId.get(d.id);
+    if (!t || !t.funding_date) return;
+    const m = monthOf(t.funding_date);
+    if (m && d.fundDate !== m) {
+      mismatches.push(d.id + ': RAW ' + d.fundDate + ' vs LoanPro ' + t.funding_date);
+    }
+  });
+  if (mismatches.length) {
+    console.warn('fundDate disagreements between curated RAW rows and LoanPro funding_date. ' +
+                 'RAW left unchanged — check which source is right:', mismatches);
+  }
+  return mismatches;
 }
 
 function hydratePortfolioFromTape() {
