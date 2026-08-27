@@ -3072,6 +3072,25 @@ async function loadPmtData() {
   return data;
 }
 
+// Reporting as-of date from the backend (private.data_as_of()). Never throws:
+// on any failure the DATA_AS_OF_* fallback literals stay in place, so a hiccup
+// here degrades to a stale label rather than an empty data room.
+async function loadDataAsOf() {
+  try {
+    const { data, error } = await window.supabase.rpc("get_data_as_of");
+    if (error) throw new Error(error.message);
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row && row.as_of_month && row.as_of_label) {
+      DATA_AS_OF_MONTH = row.as_of_month;
+      DATA_AS_OF_LABEL = row.as_of_label;
+    } else {
+      console.warn("get_data_as_of returned no usable row; keeping fallback as-of date.");
+    }
+  } catch (err) {
+    console.warn("get_data_as_of failed; keeping fallback as-of date:", err.message || err);
+  }
+}
+
 function hideOverlay() {
   const overlay = document.getElementById("pmt-loading-overlay");
   if (!overlay) return;
@@ -3142,7 +3161,11 @@ async function bootstrap() {
     `;
   }
   try {
-    PMT_DATA = await loadPmtData();
+    // Resolve the reporting as-of date alongside the tape: both must be in
+    // place before initApp() renders anything that reads DATA_AS_OF_MONTH.
+    const [pmt] = await Promise.all([loadPmtData(), loadDataAsOf()]);
+    PMT_DATA = pmt;
+    applyDataAsOfLabels();
     if (!PMT_DATA || !Array.isArray(PMT_DATA.tape)) {
       showOverlayError("Portfolio data is unavailable. Please try again.");
       return;
@@ -3406,15 +3429,26 @@ function getUnitCount(dealId) {
 // it dynamic.
 const OBS_DATE = new Date(Date.UTC(2026, 3, 22));
 
-// Reporting ceiling. All reporting is pinned to a June 30, 2026 as-of date
-// (matches backend private.data_as_of()). DATA_AS_OF_MONTH is the latest
-// month whose books are closed and therefore the newest month the Payment
-// History table/modal preview will display; DATA_AS_OF_LABEL is the
-// human-readable form shown to investors. This affects ONLY what the Payment
-// History table/modal preview render; it does NOT touch OBS_DATE / DPD math
-// or total_collected / MOIC, which always reflect all cash collected.
-const DATA_AS_OF_MONTH = "2026-06";   // reporting ceiling; matches backend private.data_as_of()
-const DATA_AS_OF_LABEL = "June 30, 2026";
+// Reporting ceiling. DATA_AS_OF_MONTH is the latest month whose books are
+// closed and therefore the newest month the Payment History table/modal
+// preview will display; DATA_AS_OF_LABEL is the human-readable form shown to
+// investors. This affects ONLY what the Payment History table/modal preview
+// render; it does NOT touch OBS_DATE / DPD math or total_collected / MOIC,
+// which always reflect all cash collected.
+//
+// These are `let`, not `const`: bootstrap() overwrites them from the backend
+// (the `get_data_as_of` RPC, which reads private.data_as_of()) before
+// initApp() runs, so the reporting date can no longer go stale in the client.
+// The literals below are the fallback used only if that call fails.
+let DATA_AS_OF_MONTH = "2026-07";   // reporting ceiling; matches backend private.data_as_of()
+let DATA_AS_OF_LABEL = "July 31, 2026";
+
+// Paints every `.data-as-of` element with the current label. Called from the
+// DOMContentLoaded handler and again from bootstrap() once the RPC lands,
+// since that RPC resolves after DOMContentLoaded has already fired.
+function applyDataAsOfLabels() {
+  document.querySelectorAll('.data-as-of').forEach(el => { el.textContent = DATA_AS_OF_LABEL; });
+}
 
 // ── RAW DATA ────────────────────────────────────────────────────────────────
 // Source of truth for the Tier 2 (full) render path. INLINE in the HTML —
@@ -6707,7 +6741,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const track = document.getElementById('sec-track');
   if (track) { track.style.display = 'block'; track.classList.add('ds-active'); }
   // Reporting date label — single source of truth is DATA_AS_OF_LABEL.
-  document.querySelectorAll('.data-as-of').forEach(el => { el.textContent = DATA_AS_OF_LABEL; });
+  // bootstrap() repaints these once get_data_as_of resolves.
+  applyDataAsOfLabels();
 });
 
 
